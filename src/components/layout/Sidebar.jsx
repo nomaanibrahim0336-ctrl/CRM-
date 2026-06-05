@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, Users, MessageSquare,
   Package, BarChart2, Zap, Settings, ChevronLeft, ChevronRight,
-  TrendingUp, Truck, Globe, Smartphone, Store,
+  TrendingUp, Truck, Globe, Smartphone, Store, Layers, DollarSign,
 } from 'lucide-react';
 
 const navGroups = [
@@ -23,12 +23,14 @@ const navGroups = [
     label: 'CATALOG',
     items: [
       { label: 'Products', icon: Package, path: '/products' },
+      { label: 'Inventory', icon: Layers, path: '/inventory' },
     ],
   },
   {
     label: 'PERFORMANCE',
     items: [
       { label: 'Analytics', icon: BarChart2, path: '/analytics' },
+      { label: 'Financials', icon: DollarSign, path: '/financials' },
     ],
   },
   {

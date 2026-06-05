@@ -11,6 +11,8 @@ import Analytics from './pages/Analytics';
 import Integrations from './pages/Integrations';
 import Settings from './pages/Settings';
 import Courier from './pages/Courier';
+import Inventory from './pages/Inventory';
+import Financials from './pages/Financials';
 
 export default function App() {
   return (
@@ -27,6 +29,8 @@ export default function App() {
               <Route path="/conversations" element={<Conversations />} />
               <Route path="/products" element={<Products />} />
               <Route path="/analytics" element={<Analytics />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/financials" element={<Financials />} />
               <Route path="/courier" element={<Courier />} />
               <Route path="/integrations" element={<Integrations />} />
               <Route path="/settings" element={<Settings />} />

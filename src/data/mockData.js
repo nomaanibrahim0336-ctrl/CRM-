@@ -295,3 +295,85 @@ export const activityFeed = [
   { id: 7, type: 'message', text: 'Fatima Zahra asking about bulk discount', time: '2 hr ago', icon: 'MessageSquare' },
   { id: 8, type: 'order', text: 'Order #ORD-7838 placed (COD - Pending)', time: '2.5 hr ago', icon: 'ShoppingBag' },
 ];
+
+// ── INVENTORY ─────────────────────────────────────────────
+
+export const inventoryProducts = [
+  { id: 'P001', name: 'Nike Air Max 270', sku: 'NK-AM270', category: 'Footwear', costPrice: 7200, salePrice: 12500, stock: 23, reserved: 4, reorderPoint: 10, supplier: 'Sports Direct PK', variants: [{ label: 'Black / 40', stock: 6 }, { label: 'Black / 41', stock: 5 }, { label: 'White / 40', stock: 7 }, { label: 'White / 41', stock: 5 }] },
+  { id: 'P002', name: 'Samsung Galaxy Buds Pro', sku: 'SG-GBP', category: 'Electronics', costPrice: 5800, salePrice: 8900, stock: 7, reserved: 2, reorderPoint: 5, supplier: 'Tech Imports LHR', variants: [{ label: 'Black', stock: 4 }, { label: 'White', stock: 3 }] },
+  { id: 'P003', name: 'Zara Floral Midi Dress', sku: 'ZR-FMD', category: 'Clothing', costPrice: 3200, salePrice: 6800, stock: 31, reserved: 5, reorderPoint: 15, supplier: 'Fashion Hub KHI', variants: [{ label: 'Red / S', stock: 8 }, { label: 'Red / M', stock: 12 }, { label: 'Red / L', stock: 6 }, { label: 'Blue / M', stock: 5 }] },
+  { id: 'P004', name: 'Yoga Mat Premium', sku: 'YM-PRE', category: 'Sports', costPrice: 3500, salePrice: 6700, stock: 2, reserved: 1, reorderPoint: 8, supplier: 'FitLife Wholesale', variants: [{ label: 'Purple', stock: 1 }, { label: 'Black', stock: 1 }] },
+  { id: 'P005', name: 'H&M Blazer Classic', sku: 'HM-BLZ', category: 'Clothing', costPrice: 5200, salePrice: 9800, stock: 18, reserved: 3, reorderPoint: 8, supplier: 'Fashion Hub KHI', variants: [{ label: 'Navy / S', stock: 5 }, { label: 'Navy / M', stock: 8 }, { label: 'Black / M', stock: 5 }] },
+  { id: 'P006', name: 'iPhone 15 Case Carbon', sku: 'IP15-CC', category: 'Accessories', costPrice: 400, salePrice: 2400, stock: 0, reserved: 0, reorderPoint: 20, supplier: 'Gadget Zone ISB', variants: [{ label: 'Black', stock: 0 }, { label: 'Grey', stock: 0 }] },
+  { id: 'P007', name: 'Adidas Running Socks 3-Pack', sku: 'AD-RS3', category: 'Accessories', costPrice: 450, salePrice: 1200, stock: 89, reserved: 12, reorderPoint: 30, supplier: 'Sports Direct PK', variants: [{ label: 'White', stock: 45 }, { label: 'Black', stock: 44 }] },
+  { id: 'P008', name: 'Laptop Bag 15"', sku: 'LB-15', category: 'Bags', costPrice: 2100, salePrice: 4200, stock: 14, reserved: 2, reorderPoint: 8, supplier: 'Bag World LHR', variants: [{ label: 'Grey', stock: 9 }, { label: 'Black', stock: 5 }] },
+  { id: 'P009', name: 'Face Serum Vitamin C', sku: 'FS-VTC', category: 'Beauty', costPrice: 1800, salePrice: 3800, stock: 5, reserved: 1, reorderPoint: 10, supplier: 'Beauty Imports KHI', variants: [{ label: '30ml', stock: 5 }] },
+  { id: 'P010', name: 'Cricket Bat Kashmir Willow', sku: 'CB-KW', category: 'Sports', costPrice: 4500, salePrice: 8500, stock: 12, reserved: 2, reorderPoint: 5, supplier: 'Sports Direct PK', variants: [{ label: 'Full Size', stock: 8 }, { label: 'Short Handle', stock: 4 }] },
+  { id: 'P011', name: 'Polo Shirt Premium', sku: 'PS-PRE', category: 'Clothing', costPrice: 1100, salePrice: 2500, stock: 67, reserved: 8, reorderPoint: 25, supplier: 'Fashion Hub KHI', variants: [{ label: 'Blue / M', stock: 20 }, { label: 'Blue / L', stock: 15 }, { label: 'White / M', stock: 18 }, { label: 'White / L', stock: 14 }] },
+  { id: 'P012', name: 'Moisturizer SPF 50', sku: 'MS-SPF50', category: 'Beauty', costPrice: 1200, salePrice: 2800, stock: 0, reserved: 0, reorderPoint: 15, supplier: 'Beauty Imports KHI', variants: [{ label: '100ml', stock: 0 }] },
+];
+
+export const stockMovements = [
+  { id: 'SM001', date: '2024-12-04', product: 'Nike Air Max 270',       sku: 'NK-AM270', type: 'Sale',           qty: -2, balance: 23, ref: '#ORD-7841', note: 'Order fulfilled' },
+  { id: 'SM002', date: '2024-12-04', product: 'Samsung Galaxy Buds Pro', sku: 'SG-GBP',  type: 'Sale',           qty: -1, balance: 7,  ref: '#ORD-7840', note: 'Order fulfilled' },
+  { id: 'SM003', date: '2024-12-03', product: 'Zara Floral Midi Dress',  sku: 'ZR-FMD',  type: 'Sale',           qty: -3, balance: 31, ref: '#ORD-7839', note: 'Order fulfilled' },
+  { id: 'SM004', date: '2024-12-03', product: 'Nike Air Max 270',        sku: 'NK-AM270', type: 'Restock',        qty: 20, balance: 25, ref: 'PO-1021',   note: 'Supplier delivery' },
+  { id: 'SM005', date: '2024-12-02', product: 'Yoga Mat Premium',        sku: 'YM-PRE',  type: 'Sale',           qty: -1, balance: 2,  ref: '#ORD-7837', note: 'Order fulfilled' },
+  { id: 'SM006', date: '2024-12-02', product: 'Polo Shirt Premium',      sku: 'PS-PRE',  type: 'Sale',           qty: -3, balance: 67, ref: '#ORD-7836', note: 'Order fulfilled' },
+  { id: 'SM007', date: '2024-12-01', product: 'Face Serum Vitamin C',    sku: 'FS-VTC',  type: 'Damage Write-off', qty: -2, balance: 5, ref: 'ADJ-0041',  note: 'Damaged in storage' },
+  { id: 'SM008', date: '2024-12-01', product: 'Cricket Bat Kashmir Willow', sku: 'CB-KW', type: 'Return',         qty: 1,  balance: 12, ref: '#ORD-7820', note: 'Customer return — restocked' },
+  { id: 'SM009', date: '2024-11-30', product: 'Laptop Bag 15"',          sku: 'LB-15',   type: 'Sale',           qty: -1, balance: 14, ref: '#ORD-7833', note: 'Order fulfilled' },
+  { id: 'SM010', date: '2024-11-30', product: 'iPhone 15 Case Carbon',   sku: 'IP15-CC', type: 'Sale',           qty: -5, balance: 0,  ref: '#ORD-7832', note: 'Last stock sold out' },
+];
+
+// ── FINANCIALS ────────────────────────────────────────────
+
+export const monthlyFinancials = [
+  { month: 'Jul', revenue: 412000, cogs: 218000, grossProfit: 194000, opEx: 98000, netProfit: 96000, orders: 184 },
+  { month: 'Aug', revenue: 487000, cogs: 254000, grossProfit: 233000, opEx: 104000, netProfit: 129000, orders: 201 },
+  { month: 'Sep', revenue: 531000, cogs: 276000, grossProfit: 255000, opEx: 109000, netProfit: 146000, orders: 218 },
+  { month: 'Oct', revenue: 614000, cogs: 318000, grossProfit: 296000, opEx: 116000, netProfit: 180000, orders: 247 },
+  { month: 'Nov', revenue: 728000, cogs: 372000, grossProfit: 356000, opEx: 124000, netProfit: 232000, orders: 289 },
+  { month: 'Dec', revenue: 842000, cogs: 421000, grossProfit: 421000, opEx: 131000, netProfit: 290000, orders: 312 },
+];
+
+export const expenseBreakdown = [
+  { category: 'Cost of Goods',     amount: 421000, color: '#E2514A', pct: 50.0 },
+  { category: 'Courier Charges',   amount: 68400,  color: '#F5A623', pct: 8.1  },
+  { category: 'Meta Ads Spend',    amount: 48200,  color: '#1877F2', pct: 5.7  },
+  { category: 'Staff Salaries',    amount: 42000,  color: '#7C6AF7', pct: 5.0  },
+  { category: 'Packaging',         amount: 12800,  color: '#3A8AE8', pct: 1.5  },
+  { category: 'Platform Fees',     amount: 8600,   color: '#1DB87A', pct: 1.0  },
+  { category: 'Returns / Refunds', amount: 18200,  color: '#55556A', pct: 2.2  },
+  { category: 'Other OpEx',        amount: 9000,   color: '#8A8A9E', pct: 1.1  },
+];
+
+export const productProfitability = [
+  { name: 'Nike Air Max 270',        costPrice: 7200, salePrice: 12500, unitsSold: 145, revenue: 1812500, cogs: 1044000, grossProfit: 768500, margin: 42.4 },
+  { name: 'Samsung Galaxy Buds Pro', costPrice: 5800, salePrice: 8900,  unitsSold: 89,  revenue: 792100,  cogs: 516200,  grossProfit: 275900, margin: 34.8 },
+  { name: 'Zara Floral Midi Dress',  costPrice: 3200, salePrice: 6800,  unitsSold: 203, revenue: 1380400, cogs: 649600,  grossProfit: 730800, margin: 52.9 },
+  { name: 'Yoga Mat Premium',        costPrice: 3500, salePrice: 6700,  unitsSold: 67,  revenue: 448900,  cogs: 234500,  grossProfit: 214400, margin: 47.8 },
+  { name: 'H&M Blazer Classic',      costPrice: 5200, salePrice: 9800,  unitsSold: 112, revenue: 1097600, cogs: 582400,  grossProfit: 515200, margin: 46.9 },
+  { name: 'Polo Shirt Premium',      costPrice: 1100, salePrice: 2500,  unitsSold: 289, revenue: 722500,  cogs: 317900,  grossProfit: 404600, margin: 56.0 },
+  { name: 'Adidas Running Socks',    costPrice: 450,  salePrice: 1200,  unitsSold: 445, revenue: 534000,  cogs: 200250,  grossProfit: 333750, margin: 62.5 },
+  { name: 'Laptop Bag 15"',          costPrice: 2100, salePrice: 4200,  unitsSold: 78,  revenue: 327600,  cogs: 163800,  grossProfit: 163800, margin: 50.0 },
+];
+
+export const cashflow = [
+  { week: 'W1 Nov', inflow: 182000, outflow: 121000, net: 61000 },
+  { week: 'W2 Nov', inflow: 168000, outflow: 108000, net: 60000 },
+  { week: 'W3 Nov', inflow: 194000, outflow: 128000, net: 66000 },
+  { week: 'W4 Nov', inflow: 184000, outflow: 115000, net: 69000 },
+  { week: 'W1 Dec', inflow: 210000, outflow: 132000, net: 78000 },
+  { week: 'W2 Dec', inflow: 248000, outflow: 149000, net: 99000 },
+];
+
+export const taxSummary = {
+  grossRevenue:  842000,
+  totalExpenses: 628200,
+  taxableIncome: 213800,
+  estimatedTax:  42760,
+  netAfterTax:   171040,
+  salesTaxRate:  17,
+  salesTaxOwed:  143140,
+};
