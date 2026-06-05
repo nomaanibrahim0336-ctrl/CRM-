@@ -15,7 +15,10 @@ connectDB();
 
 // Security & parsing
 app.use(helmet());
-app.use(cors({ origin: process.env.NODE_ENV === 'production' ? 'https://yourdomain.com' : '*' }));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -43,19 +46,15 @@ app.use('/api/financials', require('./routes/financials'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/settings', require('./routes/settings'));
 
-// Future route placeholders
-// app.use('/api/products', require('./routes/products'));
-// app.use('/api/orders', require('./routes/orders'));
-// app.use('/api/conversations', require('./routes/conversations'));
-// app.use('/api/courier', require('./routes/courier'));
-// app.use('/api/analytics', require('./routes/analytics'));
-// app.use('/api/settings', require('./routes/settings'));
-
 // Error handler (must be last)
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-});
+// Only listen when running directly (not on Vercel)
+if (process.env.NODE_ENV !== 'production' || process.env.LOCAL_DEV) {
+  app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  });
+}
 
 module.exports = app;
+

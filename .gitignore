@@ -2,3 +2,10 @@ node_modules/
 dist/
 .env
 .env.local
+server/node_modules/
+server/.env
+.env.production
+*.log
+.DS_Store
+Thumbs.db
+.vercel
