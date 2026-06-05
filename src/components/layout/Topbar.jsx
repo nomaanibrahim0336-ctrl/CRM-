@@ -3,6 +3,7 @@ import { Search, Bell, ShoppingBag, MessageSquare, Truck, AlertCircle, CreditCar
 import { useNavigate } from 'react-router-dom';
 import { orders, customers, products } from '../../data/mockData';
 import { useKeyboard } from '../../hooks/useKeyboard';
+import { useAuth } from '../../context/AuthContext';
 
 const notifications = [
   { id: 1, icon: ShoppingBag, text: 'New order #ORD-7841 from Aisha Malik', time: '2 min ago', unread: true, color: '#7C6AF7' },
@@ -40,6 +41,7 @@ function useClickOutside(ref, handler) {
 
 export default function Topbar() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
@@ -158,10 +160,10 @@ export default function Topbar() {
               onMouseEnter={e => e.currentTarget.style.borderColor = '#2A2A35'}
               onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
             >
-              <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'linear-gradient(135deg, #7C6AF7, #3A8AE8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#fff' }}>N</div>
+              <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'linear-gradient(135deg, #7C6AF7, #3A8AE8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, color: '#fff' }}>{(user?.name || 'U')[0].toUpperCase()}</div>
               <div>
-                <div style={{ fontSize: '12px', fontWeight: 600, color: '#F0EFF6', lineHeight: 1.2 }}>Noman</div>
-                <div style={{ fontSize: '11px', color: '#55556A' }}>Admin</div>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#F0EFF6', lineHeight: 1.2 }}>{user?.name?.split(' ')[0] || 'User'}</div>
+                <div style={{ fontSize: '11px', color: '#55556A' }}>{user?.role || 'Admin'}</div>
               </div>
               <ChevronDown size={12} color="#55556A" />
             </div>
@@ -169,10 +171,10 @@ export default function Topbar() {
               <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '240px', background: '#141418', border: '1px solid #2A2A35', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 300, overflow: 'hidden' }}>
                 {/* User header */}
                 <div style={{ padding: '16px', background: '#1C1C22', borderBottom: '1px solid #1F1F28', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #7C6AF7, #3A8AE8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: '#fff' }}>N</div>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #7C6AF7, #3A8AE8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 700, color: '#fff' }}>{(user?.name || 'U')[0].toUpperCase()}</div>
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#F0EFF6' }}>Noman Ibrahim</div>
-                    <div style={{ fontSize: '11px', color: '#55556A', marginTop: '1px' }}>nomaan.ibrahim0336@gmail.com</div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#F0EFF6' }}>{user?.name || 'User'}</div>
+                    <div style={{ fontSize: '11px', color: '#55556A', marginTop: '1px' }}>{user?.email || ''}</div>
                   </div>
                 </div>
                 {/* Menu items */}
@@ -194,7 +196,7 @@ export default function Topbar() {
                   );
                 })}
                 <div style={{ borderTop: '1px solid #1F1F28', margin: '4px 0' }} />
-                <button style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#E2514A', fontSize: '13px', textAlign: 'left' }}
+                <button onClick={() => { setAvatarOpen(false); logout(); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer', color: '#E2514A', fontSize: '13px', textAlign: 'left' }}
                   onMouseEnter={e => e.currentTarget.style.background = '#3D141422'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
