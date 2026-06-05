@@ -10,6 +10,7 @@ import Products from './pages/Products';
 import Analytics from './pages/Analytics';
 import Integrations from './pages/Integrations';
 import Settings from './pages/Settings';
+import Courier from './pages/Courier';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="/conversations" element={<Conversations />} />
               <Route path="/products" element={<Products />} />
               <Route path="/analytics" element={<Analytics />} />
+              <Route path="/courier" element={<Courier />} />
               <Route path="/integrations" element={<Integrations />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>

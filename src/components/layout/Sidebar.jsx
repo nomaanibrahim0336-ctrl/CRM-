@@ -32,6 +32,12 @@ const navGroups = [
     ],
   },
   {
+    label: 'LOGISTICS',
+    items: [
+      { label: 'Courier', icon: Truck, path: '/courier' },
+    ],
+  },
+  {
     label: 'INTEGRATIONS',
     items: [
       { label: 'Integrations', icon: Zap, path: '/integrations' },
