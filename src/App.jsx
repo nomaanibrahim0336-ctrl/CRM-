@@ -13,31 +13,34 @@ import Settings from './pages/Settings';
 import Courier from './pages/Courier';
 import Inventory from './pages/Inventory';
 import Financials from './pages/Financials';
+import { ToastProvider } from './context/ToastContext';
 
 export default function App() {
   return (
     <BrowserRouter>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0D0D0F', overflow: 'hidden' }}>
-        <Topbar />
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          <Sidebar />
-          <main style={{ flex: 1, overflow: 'hidden', background: '#0D0D0F' }}>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/customers" element={<Customers />} />
-              <Route path="/conversations" element={<Conversations />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/financials" element={<Financials />} />
-              <Route path="/courier" element={<Courier />} />
-              <Route path="/integrations" element={<Integrations />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </main>
+      <ToastProvider>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0D0D0F', overflow: 'hidden' }}>
+          <Topbar />
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            <Sidebar />
+            <main style={{ flex: 1, overflow: 'hidden', background: '#0D0D0F' }}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/conversations" element={<Conversations />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/financials" element={<Financials />} />
+                <Route path="/courier" element={<Courier />} />
+                <Route path="/integrations" element={<Integrations />} />
+                <Route path="/settings" element={<Settings />} />
+              </Routes>
+            </main>
+          </div>
         </div>
-      </div>
+      </ToastProvider>
     </BrowserRouter>
   );
 }
