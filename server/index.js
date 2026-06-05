@@ -39,6 +39,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/conversations', require('./routes/conversations'));
 app.use('/api/courier', require('./routes/courier'));
+app.use('/api/financials', require('./routes/financials'));
 
 // Future route placeholders
 // app.use('/api/products', require('./routes/products'));
