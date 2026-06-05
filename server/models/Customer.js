@@ -53,6 +53,7 @@ const CustomerSchema = new mongoose.Schema({
     default: '',
   },
   tags: [{ type: String, trim: true }],
+  shopifyId: { type: String, default: null, index: true },
   avatar: {
     type: String,
     default: '',

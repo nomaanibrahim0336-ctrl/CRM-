@@ -1,0 +1,27 @@
+const express = require('express');
+const router = express.Router();
+const {
+  getStatus,
+  syncProducts,
+  syncCustomers,
+  syncOrders,
+  syncAll,
+  getSyncStatus,
+  handleOrderWebhook,
+} = require('../controllers/shopifyController');
+const { protect, authorize } = require('../middleware/auth');
+
+// Public webhook endpoint (called by Shopify — no JWT)
+router.post('/webhooks/orders/create', handleOrderWebhook);
+
+// All other routes require auth
+router.use(protect);
+
+router.get('/status', getStatus);
+router.get('/sync/status', getSyncStatus);
+router.post('/sync/products', authorize('admin', 'manager'), syncProducts);
+router.post('/sync/customers', authorize('admin', 'manager'), syncCustomers);
+router.post('/sync/orders', authorize('admin', 'manager'), syncOrders);
+router.post('/sync/all', authorize('admin', 'manager'), syncAll);
+
+module.exports = router;

@@ -45,6 +45,7 @@ app.use('/api/courier', require('./routes/courier'));
 app.use('/api/financials', require('./routes/financials'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/shopify', require('./routes/shopify'));
 
 // Error handler (must be last)
 app.use(errorHandler);

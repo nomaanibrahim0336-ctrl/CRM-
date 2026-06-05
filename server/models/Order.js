@@ -18,6 +18,7 @@ const StatusHistorySchema = new mongoose.Schema({
 }, { _id: false });
 
 const OrderSchema = new mongoose.Schema({
+  shopifyId: { type: String, default: null, index: true },
   orderId: {
     type: String,
     unique: true,

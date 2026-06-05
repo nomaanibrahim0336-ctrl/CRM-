@@ -69,6 +69,7 @@ const ProductSchema = new mongoose.Schema({
     enum: ['Active', 'Draft', 'Archived'],
     default: 'Active',
   },
+  shopifyId: { type: String, default: null, index: true },
   totalSold: {
     type: Number,
     default: 0,
