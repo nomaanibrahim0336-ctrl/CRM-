@@ -35,6 +35,7 @@ app.use('/api/', rateLimit({
 app.use('/api/health', require('./routes/health'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/customers', require('./routes/customers'));
+app.use('/api/products', require('./routes/products'));
 
 // Future route placeholders
 // app.use('/api/products', require('./routes/products'));
