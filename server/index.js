@@ -50,12 +50,10 @@ app.use('/api/shopify', require('./routes/shopify'));
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Only listen when running directly (not on Vercel)
-if (process.env.NODE_ENV !== 'production' || process.env.LOCAL_DEV) {
-  app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  });
-}
+// Always listen — Railway requires the server to bind to PORT
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
 
 module.exports = app;
 
