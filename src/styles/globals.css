@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #0D0D0F;
+  --bg-surface: #141418;
+  --bg-elevated: #1C1C22;
+  --bg-hover: #23232B;
+  --border: #2A2A35;
+  --border-subtle: #1F1F28;
+  --text-primary: #F0EFF6;
+  --text-secondary: #8A8A9E;
+  --text-tertiary: #55556A;
+  --accent: #7C6AF7;
+  --accent-hover: #9180FF;
+  --accent-muted: #2A2550;
+  --green: #1DB87A;
+  --green-muted: #0F3D2A;
+  --amber: #F5A623;
+  --amber-muted: #3D2D0A;
+  --red: #E2514A;
+  --red-muted: #3D1414;
+  --blue: #3A8AE8;
+  --blue-muted: #0D2A4A;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+input, textarea, select {
+  font-family: 'DM Sans', sans-serif;
+}
