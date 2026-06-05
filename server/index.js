@@ -40,6 +40,7 @@ app.use('/api/orders', require('./routes/orders'));
 app.use('/api/conversations', require('./routes/conversations'));
 app.use('/api/courier', require('./routes/courier'));
 app.use('/api/financials', require('./routes/financials'));
+app.use('/api/analytics', require('./routes/analytics'));
 
 // Future route placeholders
 // app.use('/api/products', require('./routes/products'));
