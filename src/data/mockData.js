@@ -141,6 +141,111 @@ export const conversations = [
       { id: 1, sender: 'customer', text: 'What are the payment options?', time: '6:15 AM', isBot: false },
     ]
   },
+  {
+    id: 'conv6',
+    customer: 'Kamran Sheikh',
+    avatar: 'KS',
+    channel: 'Telegram',
+    lastMessage: 'Is the cricket bat still available?',
+    time: '5 min ago',
+    unread: 1,
+    status: 'Open',
+    messages: [
+      { id: 1, sender: 'customer', text: 'Hey! Found you on Telegram. Is the cricket bat still available?', time: '10:55 AM', isBot: false },
+      { id: 2, sender: 'bot', text: 'Hi Kamran! Yes, the Kashmir Willow Cricket Bat is in stock at PKR 8,500. Want me to place an order?', time: '10:55 AM', isBot: true },
+      { id: 3, sender: 'customer', text: 'Is the cricket bat still available?', time: '10:58 AM', isBot: false },
+    ]
+  },
+  {
+    id: 'conv7',
+    customer: 'Hina Baig',
+    avatar: 'HB',
+    channel: 'Messenger',
+    lastMessage: 'Can I return the laptop bag?',
+    time: '20 min ago',
+    unread: 2,
+    status: 'Open',
+    messages: [
+      { id: 1, sender: 'customer', text: 'Hi, I received the laptop bag but the zipper is broken.', time: '9:00 AM', isBot: false },
+      { id: 2, sender: 'bot', text: 'Hello Hina! I\'m sorry to hear that. We\'ll arrange an immediate replacement. Can you share a photo?', time: '9:00 AM', isBot: true },
+      { id: 3, sender: 'customer', text: 'Can I return the laptop bag?', time: '9:20 AM', isBot: false },
+    ]
+  },
+  {
+    id: 'conv8',
+    customer: 'Zainab Hussain',
+    avatar: 'ZH',
+    channel: 'TikTok',
+    lastMessage: 'Saw your TikTok! How to order?',
+    time: '30 min ago',
+    unread: 4,
+    status: 'Open',
+    messages: [
+      { id: 1, sender: 'customer', text: 'OMG I just saw your TikTok video! The face serum looks amazing 😍', time: '8:30 AM', isBot: false },
+      { id: 2, sender: 'bot', text: 'Thank you Zainab! 💜 The Vitamin C Face Serum is PKR 3,800. It\'s our bestseller!', time: '8:30 AM', isBot: true },
+      { id: 3, sender: 'customer', text: 'Saw your TikTok! How to order?', time: '8:35 AM', isBot: false },
+    ]
+  },
+  {
+    id: 'conv9',
+    customer: 'Hassan Raza',
+    avatar: 'HR',
+    channel: 'Email',
+    lastMessage: 'Invoice for order #ORD-7836',
+    time: '1 hr ago',
+    unread: 0,
+    status: 'Closed',
+    messages: [
+      { id: 1, sender: 'customer', text: 'Hello, could you please send me an invoice for my order #ORD-7836?', time: '7:00 AM', isBot: false },
+      { id: 2, sender: 'agent', text: 'Hi Hassan! I\'ve attached your invoice for order #ORD-7836 (Polo Shirt x3, PKR 7,500). Please check your email.', time: '7:15 AM', isBot: false },
+      { id: 3, sender: 'customer', text: 'Invoice for order #ORD-7836 — received, thank you!', time: '7:20 AM', isBot: false },
+    ]
+  },
+  {
+    id: 'conv10',
+    customer: 'Omar Farooq',
+    avatar: 'OF',
+    channel: 'Twitter',
+    lastMessage: 'Why was my order cancelled?',
+    time: '45 min ago',
+    unread: 2,
+    status: 'Open',
+    messages: [
+      { id: 1, sender: 'customer', text: '@YourBrand my order #ORD-7834 got cancelled without any reason! 😡', time: '8:00 AM', isBot: false },
+      { id: 2, sender: 'bot', text: 'Hi Omar, we apologize for the inconvenience! Let me look into order #ORD-7834 right away.', time: '8:01 AM', isBot: true },
+      { id: 3, sender: 'customer', text: 'Why was my order cancelled?', time: '8:05 AM', isBot: false },
+    ]
+  },
+  {
+    id: 'conv11',
+    customer: 'Nadia Siddiqui',
+    avatar: 'NS',
+    channel: 'LiveChat',
+    lastMessage: 'Checking out now, any promo code?',
+    time: '8 min ago',
+    unread: 1,
+    status: 'Open',
+    messages: [
+      { id: 1, sender: 'customer', text: 'Hi! I\'m on your website right now and about to check out.', time: '10:50 AM', isBot: false },
+      { id: 2, sender: 'bot', text: 'Welcome! 👋 I\'m Zara, your shopping assistant. Can I help you complete your purchase?', time: '10:50 AM', isBot: true },
+      { id: 3, sender: 'customer', text: 'Checking out now, any promo code?', time: '10:52 AM', isBot: false },
+    ]
+  },
+  {
+    id: 'conv12',
+    customer: 'Raheel Abbas',
+    avatar: 'RA',
+    channel: 'Telegram',
+    lastMessage: 'Send me the product catalog',
+    time: '12 min ago',
+    unread: 0,
+    status: 'Open',
+    messages: [
+      { id: 1, sender: 'customer', text: 'Hello, can you send me the full product catalog?', time: '10:45 AM', isBot: false },
+      { id: 2, sender: 'bot', text: 'Sure Raheel! Here\'s our catalog link: [catalog.yourstore.pk]. We have 200+ products!', time: '10:45 AM', isBot: true },
+      { id: 3, sender: 'customer', text: 'Send me the product catalog', time: '10:47 AM', isBot: false },
+    ]
+  },
 ];
 
 export const products = [
