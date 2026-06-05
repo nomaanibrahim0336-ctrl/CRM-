@@ -73,18 +73,21 @@ function AccountingRow({ label, value, indent = 0, bold, color, borderTop, borde
 
 const TABS = ['P&L Statement', 'Revenue', 'Expenses', 'Cash Flow', 'Product Profitability', 'Tax & Compliance'];
 
-// current month
-const cur = monthlyFinancials[monthlyFinancials.length - 1];
-const prev = monthlyFinancials[monthlyFinancials.length - 2];
-
 export default function Financials() {
   const [activeTab, setActiveTab] = useState('P&L Statement');
   const [period, setPeriod] = useState('Dec 2024');
 
+  const selectedIdx = monthlyFinancials.findIndex(m => `${m.month} 2024` === period);
+  const curIdx = selectedIdx >= 0 ? selectedIdx : monthlyFinancials.length - 1;
+  const cur = monthlyFinancials[curIdx];
+  const prev = monthlyFinancials[Math.max(0, curIdx - 1)];
+  // data up to and including selected month
+  const chartDataUpTo = monthlyFinancials.slice(0, curIdx + 1);
+
   const grossMarginPct = ((cur.grossProfit / cur.revenue) * 100).toFixed(1);
   const netMarginPct = ((cur.netProfit / cur.revenue) * 100).toFixed(1);
-  const revenueGrowth = (((cur.revenue - prev.revenue) / prev.revenue) * 100).toFixed(1);
-  const profitGrowth = (((cur.netProfit - prev.netProfit) / prev.netProfit) * 100).toFixed(1);
+  const revenueGrowth = curIdx > 0 ? (((cur.revenue - prev.revenue) / prev.revenue) * 100).toFixed(1) : '0.0';
+  const profitGrowth = curIdx > 0 ? (((cur.netProfit - prev.netProfit) / prev.netProfit) * 100).toFixed(1) : '0.0';
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: '#0D0D0F' }}>
@@ -114,10 +117,10 @@ export default function Financials() {
 
         {/* Top KPIs — always visible */}
         <div style={{ display: 'flex', gap: '14px', marginBottom: '24px' }}>
-          <KPI label="Gross Revenue"   value={fmtK(cur.revenue)}    sub="Dec 2024"             trend={`+${revenueGrowth}% vs Nov`} trendUp color="#F0EFF6"  icon={ShoppingBag} />
-          <KPI label="Gross Profit"    value={fmtK(cur.grossProfit)} sub={`${grossMarginPct}% margin`} trend="+3.2% vs Nov" trendUp color="#1DB87A"  icon={TrendingUp}  border="#1DB87A22" />
-          <KPI label="Total Expenses"  value={fmtK(cur.cogs + cur.opEx)} sub="COGS + OpEx"     trend="+5.1% vs Nov" trendUp={false} color="#E2514A" icon={TrendingDown} border="#E2514A22" />
-          <KPI label="Net Profit"      value={fmtK(cur.netProfit)}   sub={`${netMarginPct}% net margin`} trend={`+${profitGrowth}% vs Nov`} trendUp color="#7C6AF7"  icon={DollarSign}  border="#7C6AF722" />
+          <KPI label="Gross Revenue"   value={fmtK(cur.revenue)}    sub={period}             trend={`+${revenueGrowth}% vs prev`} trendUp color="#F0EFF6"  icon={ShoppingBag} />
+          <KPI label="Gross Profit"    value={fmtK(cur.grossProfit)} sub={`${grossMarginPct}% margin`} trend="+3.2% vs prev" trendUp color="#1DB87A"  icon={TrendingUp}  border="#1DB87A22" />
+          <KPI label="Total Expenses"  value={fmtK(cur.cogs + cur.opEx)} sub="COGS + OpEx"     trend="+5.1% vs prev" trendUp={false} color="#E2514A" icon={TrendingDown} border="#E2514A22" />
+          <KPI label="Net Profit"      value={fmtK(cur.netProfit)}   sub={`${netMarginPct}% net margin`} trend={`+${profitGrowth}% vs prev`} trendUp color="#7C6AF7"  icon={DollarSign}  border="#7C6AF722" />
           <KPI label="Total Orders"    value={cur.orders}             sub="This month"          trend="+8.0% vs Nov" trendUp color="#3A8AE8"  icon={Package} />
           <KPI label="Avg Order Value" value={`PKR ${Math.round(cur.revenue / cur.orders).toLocaleString()}`} sub="Per order" color="#F5A623" icon={Calculator} />
         </div>
@@ -142,7 +145,7 @@ export default function Financials() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <div>
                   <div style={{ color: '#F0EFF6', fontWeight: 700, fontSize: '16px' }}>Profit & Loss Statement</div>
-                  <div style={{ color: '#55556A', fontSize: '12px' }}>December 2024</div>
+                  <div style={{ color: '#55556A', fontSize: '12px' }}>{period}</div>
                 </div>
                 <FileText size={18} color="#55556A" />
               </div>
@@ -205,9 +208,9 @@ export default function Financials() {
             <div style={{ width: '300px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ background: '#141418', border: '1px solid #2A2A35', borderRadius: '12px', padding: '18px' }}>
                 <div style={{ fontSize: '11px', color: '#8A8A9E', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '14px' }}>6-Month Snapshot</div>
-                {monthlyFinancials.map(m => (
+                {chartDataUpTo.map(m => (
                   <div key={m.month} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #1F1F28' }}>
-                    <span style={{ color: '#8A8A9E', fontSize: '12px', width: '36px' }}>{m.month}</span>
+                    <span style={{ color: m.month === cur.month ? '#7C6AF7' : '#8A8A9E', fontSize: '12px', width: '36px', fontWeight: m.month === cur.month ? 700 : 400 }}>{m.month}</span>
                     <div style={{ flex: 1, height: '4px', background: '#1C1C22', borderRadius: '2px', overflow: 'hidden', margin: '0 10px' }}>
                       <div style={{ width: `${(m.netProfit / 290000) * 100}%`, height: '100%', background: '#7C6AF7', borderRadius: '2px' }} />
                     </div>
@@ -243,7 +246,7 @@ export default function Financials() {
             <div style={{ background: '#141418', border: '1px solid #2A2A35', borderRadius: '12px', padding: '20px' }}>
               <div style={{ fontSize: '13px', color: '#8A8A9E', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '16px' }}>Revenue vs Profit — 6 Months</div>
               <ResponsiveContainer width="100%" height={240}>
-                <AreaChart data={monthlyFinancials}>
+                <AreaChart data={chartDataUpTo}>
                   <defs>
                     <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#7C6AF7" stopOpacity={0.3} /><stop offset="95%" stopColor="#7C6AF7" stopOpacity={0} /></linearGradient>
                     <linearGradient id="prof" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#1DB87A" stopOpacity={0.3} /><stop offset="95%" stopColor="#1DB87A" stopOpacity={0} /></linearGradient>
@@ -289,7 +292,7 @@ export default function Financials() {
               <div style={{ flex: 1, background: '#141418', border: '1px solid #2A2A35', borderRadius: '12px', padding: '20px' }}>
                 <div style={{ fontSize: '13px', color: '#8A8A9E', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '14px' }}>Margin Trend</div>
                 <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={monthlyFinancials.map(m => ({ month: m.month, gross: +((m.grossProfit / m.revenue) * 100).toFixed(1), net: +((m.netProfit / m.revenue) * 100).toFixed(1) }))}>
+                  <LineChart data={chartDataUpTo.map(m => ({ month: m.month, gross: +((m.grossProfit / m.revenue) * 100).toFixed(1), net: +((m.netProfit / m.revenue) * 100).toFixed(1) }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2A2A35" vertical={false} />
                     <XAxis dataKey="month" tick={{ fill: '#55556A', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: '#55556A', fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
@@ -313,13 +316,13 @@ export default function Financials() {
                   </tr>
                 </thead>
                 <tbody>
-                  {monthlyFinancials.map((m, i) => {
+                  {chartDataUpTo.map((m, i) => {
                     const grossM = ((m.grossProfit / m.revenue) * 100).toFixed(1);
                     const netM = ((m.netProfit / m.revenue) * 100).toFixed(1);
-                    const isCurrent = i === monthlyFinancials.length - 1;
+                    const isCurrent = m.month === cur.month;
                     return (
                       <tr key={m.month} style={{ borderBottom: '1px solid #1F1F28', background: isCurrent ? '#1A1A20' : 'transparent' }}>
-                        <td style={{ padding: '11px 14px', color: isCurrent ? '#7C6AF7' : '#F0EFF6', fontWeight: isCurrent ? 700 : 400 }}>{m.month} {isCurrent && <span style={{ fontSize: '10px', background: '#2A2550', padding: '1px 5px', borderRadius: '4px', marginLeft: '4px' }}>Current</span>}</td>
+                        <td style={{ padding: '11px 14px', color: isCurrent ? '#7C6AF7' : '#F0EFF6', fontWeight: isCurrent ? 700 : 400 }}>{m.month} {isCurrent && <span style={{ fontSize: '10px', background: '#2A2550', padding: '1px 5px', borderRadius: '4px', marginLeft: '4px' }}>Selected</span>}</td>
                         <td style={{ padding: '11px 14px', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#F0EFF6' }}>PKR {(m.revenue / 1000).toFixed(0)}K</td>
                         <td style={{ padding: '11px 14px', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#E2514A' }}>PKR {(m.cogs / 1000).toFixed(0)}K</td>
                         <td style={{ padding: '11px 14px', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#1DB87A', fontWeight: 600 }}>PKR {(m.grossProfit / 1000).toFixed(0)}K</td>
