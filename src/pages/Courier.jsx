@@ -200,6 +200,9 @@ export default function Courier() {
   const [selected, setSelected] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [bookingForm, setBookingForm] = useState({ customer: '', phone: '', city: '', address: '', weight: '', cod: '', courier: 'TCS', product: '', notes: '' });
+  const [booking, setBooking] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState('');
+  const [bookingError, setBookingError] = useState('');
   const [shipments, setShipments] = useState(shipments_mock);
 
   useEffect(() => {
@@ -225,6 +228,58 @@ export default function Courier() {
       }
     }).catch(() => {});
   }, []);
+
+  const handleBookShipment = async () => {
+    if (!bookingForm.customer || !bookingForm.phone || !bookingForm.city || !bookingForm.cod) {
+      setBookingError('Please fill in customer name, phone, city, and COD amount.');
+      return;
+    }
+    setBooking(true);
+    setBookingError('');
+    setBookingSuccess('');
+    try {
+      const payload = {
+        customerName: bookingForm.customer,
+        customerPhone: bookingForm.phone,
+        city: bookingForm.city,
+        address: bookingForm.address,
+        courierName: bookingForm.courier,
+        codAmount: parseFloat(bookingForm.cod) || 0,
+        weight: parseFloat(bookingForm.weight) || 0,
+        notes: bookingForm.notes,
+        items: bookingForm.product ? [{ name: bookingForm.product, qty: 1, salePrice: parseFloat(bookingForm.cod) || 0 }] : [],
+      };
+      const res = await api.post('/api/courier/shipments', payload);
+      if (res.success) {
+        const s = res.data;
+        const newShipment = {
+          id: s.shipmentId || s._id,
+          orderId: s.orderId || '—',
+          customer: s.customerName || bookingForm.customer,
+          phone: s.customerPhone || bookingForm.phone,
+          city: s.city || bookingForm.city,
+          courier: s.courierName || bookingForm.courier,
+          trackingId: s.trackingNumber || s.trackingId || '—',
+          status: s.status || 'Booked',
+          weight: s.weight ? `${s.weight} kg` : `${bookingForm.weight} kg`,
+          cod: s.codAmount || parseFloat(bookingForm.cod) || 0,
+          bookedOn: new Date().toLocaleDateString(),
+          deliveredOn: null,
+          attempts: 0,
+          product: bookingForm.product || '—',
+        };
+        setShipments(prev => [newShipment, ...prev]);
+        setBookingSuccess(`Shipment booked! ID: ${newShipment.id} | Tracking: ${newShipment.trackingId}`);
+        setBookingForm({ customer: '', phone: '', city: '', address: '', weight: '', cod: '', courier: 'TCS', product: '', notes: '' });
+      } else {
+        setBookingError(res.error || 'Booking failed — please try again.');
+      }
+    } catch (err) {
+      setBookingError('Booking failed: ' + err.message);
+    } finally {
+      setBooking(false);
+    }
+  };
 
   const filteredShipments = shipments.filter(s => {
     if (statusFilter !== 'All' && s.status !== statusFilter) return false;
@@ -821,15 +876,28 @@ export default function Courier() {
                   </div>
                 )}
 
+                {/* Feedback messages */}
+                {bookingError && (
+                  <div style={{ padding: '10px 14px', background: '#3D1414', border: '1px solid #E2514A33', borderRadius: '8px', color: '#E2514A', fontSize: '13px' }}>
+                    {bookingError}
+                  </div>
+                )}
+                {bookingSuccess && (
+                  <div style={{ padding: '10px 14px', background: '#0F3D2A', border: '1px solid #1DB87A33', borderRadius: '8px', color: '#1DB87A', fontSize: '13px' }}>
+                    ✓ {bookingSuccess}
+                  </div>
+                )}
+
                 {/* Submit */}
                 <div style={{ display: 'flex', gap: '10px', paddingTop: '6px' }}>
-                  <button style={{ flex: 1, padding: '12px', background: '#7C6AF7', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <Package size={15} /> Book Shipment
+                  <button onClick={handleBookShipment} disabled={booking}
+                    style={{ flex: 1, padding: '12px', background: booking ? '#55556A' : '#7C6AF7', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: booking ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <Package size={15} /> {booking ? 'Booking...' : 'Book Shipment'}
                   </button>
                   <button style={{ padding: '12px 20px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Printer size={14} /> Print Label
                   </button>
-                  <button onClick={() => setBookingForm({ customer: '', phone: '', city: '', address: '', weight: '', cod: '', courier: 'TCS', product: '', notes: '' })}
+                  <button onClick={() => { setBookingForm({ customer: '', phone: '', city: '', address: '', weight: '', cod: '', courier: 'TCS', product: '', notes: '' }); setBookingError(''); setBookingSuccess(''); }}
                     style={{ padding: '12px 16px', background: 'transparent', border: '1px solid #2A2A35', borderRadius: '8px', color: '#55556A', fontSize: '14px', cursor: 'pointer' }}>
                     Clear
                   </button>
