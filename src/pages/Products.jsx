@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit2, Eye, Package, X, RefreshCw } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import { products as initialProducts } from '../data/mockData';
+import { products as mockProducts } from '../data/mockData';
 import { useToast } from '../context/ToastContext';
+import api from '../utils/api';
 
 const categoryColors = {
   Footwear: '#7C6AF7', Electronics: '#3A8AE8', Clothing: '#1DB87A',
@@ -20,7 +21,24 @@ export default function Products() {
   const addToast = useToast();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState(mockProducts);
+
+  useEffect(() => {
+    api.get('/api/products?limit=200').then(data => {
+      if (data.success && data.data?.length > 0) {
+        const mapped = data.data.map(p => ({
+          id: p._id, name: p.name, sku: p.sku || '—',
+          category: p.category || 'Other',
+          costPrice: p.costPrice || 0, salePrice: p.salePrice || p.price || 0,
+          stock: p.stock ?? 0, reorderPoint: p.reorderPoint || 5,
+          supplier: p.supplier || '—', description: p.description || '',
+          status: (p.stock ?? 0) === 0 ? 'Out of Stock' : (p.stock ?? 0) <= (p.reorderPoint || 5) ? 'Low Stock' : 'In Stock',
+          image: p.image || null,
+        }));
+        setProducts(mapped);
+      }
+    }).catch(() => {});
+  }, []);
 
   const [modal, setModal] = useState(null); // null | 'add' | 'edit' | 'view'
   const [editProduct, setEditProduct] = useState(null);

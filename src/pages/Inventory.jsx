@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Package, AlertTriangle, TrendingDown, TrendingUp, Plus, Search,
   Download, RefreshCw, ChevronDown, ChevronUp, RotateCcw, Truck,
   Edit, ArrowUpCircle, ArrowDownCircle, Filter, Box, BarChart2,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { inventoryProducts, stockMovements } from '../data/mockData';
+import { inventoryProducts as mockInventory, stockMovements } from '../data/mockData';
+import api from '../utils/api';
 
 const CATEGORIES = ['All', 'Footwear', 'Electronics', 'Clothing', 'Sports', 'Accessories', 'Bags', 'Beauty'];
 
@@ -63,6 +64,22 @@ const CustomTooltip = ({ active, payload, label }) => {
 const TABS = ['Stock Overview', 'Products', 'Stock Movements', 'Low Stock Alerts', 'Valuation'];
 
 export default function Inventory() {
+  const [inventoryProducts, setInventoryProducts] = useState(mockInventory);
+
+  useEffect(() => {
+    api.get('/api/products?limit=200').then(data => {
+      if (data.success && data.data?.length > 0) {
+        const mapped = data.data.map(p => ({
+          id: p._id, name: p.name, sku: p.sku || '—',
+          category: p.category || 'Other',
+          costPrice: p.costPrice || 0, salePrice: p.salePrice || p.price || 0,
+          stock: p.stock ?? 0, reorderPoint: p.reorderPoint || 5,
+        }));
+        setInventoryProducts(mapped);
+      }
+    }).catch(() => {});
+  }, []);
+
   const [activeTab, setActiveTab] = useState('Stock Overview');
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');

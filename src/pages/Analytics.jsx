@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, ShoppingCart, DollarSign, Percent, Download } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import PageWrapper from '../components/layout/PageWrapper';
@@ -7,6 +7,7 @@ import Card from '../components/ui/Card';
 import { revenueData, topProducts, ordersBySource, metaAdsData, courierData } from '../data/mockData';
 import { exportCsv } from '../utils/exportCsv';
 import { useToast } from '../context/ToastContext';
+import api from '../utils/api';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
