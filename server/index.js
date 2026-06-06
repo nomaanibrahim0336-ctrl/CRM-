@@ -16,7 +16,18 @@ connectDB();
 // Security & parsing
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    const allowed = [
+      process.env.FRONTEND_URL,
+      'https://crm-railway1.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:3000',
+    ].filter(Boolean);
+    if (allowed.some(o => origin.startsWith(o))) return callback(null, true);
+    return callback(null, true); // allow all for now
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
