@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API = import.meta.env.VITE_API_URL || 'https://crm-production-eb0c.up.railway.app';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -31,7 +31,9 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error(`Server error (${res.status}): ${text.slice(0, 100)}`); }
     if (!data.success) throw new Error(data.error || 'Login failed');
     localStorage.setItem('crm_token', data.token);
     setToken(data.token);
@@ -45,7 +47,9 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, role: 'admin' }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error(`Server error (${res.status}): ${text.slice(0, 100)}`); }
     if (!data.success) throw new Error(data.error || 'Registration failed');
     localStorage.setItem('crm_token', data.token);
     setToken(data.token);

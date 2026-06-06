@@ -100,7 +100,6 @@ OrderSchema.virtual('profit').get(function () {
 OrderSchema.set('toJSON', { virtuals: true });
 OrderSchema.set('toObject', { virtuals: true });
 
-OrderSchema.index({ orderId: 1 });
 OrderSchema.index({ customer: 1, status: 1, createdAt: -1 });
 OrderSchema.index({ source: 1, paymentMethod: 1, paymentStatus: 1 });
 
