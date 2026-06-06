@@ -3,9 +3,10 @@ import { Search, Download, MoreVertical, X, Package, MessageSquare, Truck, User,
 import PageWrapper from '../components/layout/PageWrapper';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
-import { orders as initialOrders } from '../data/mockData';
+import { orders as mockOrders } from '../data/mockData';
 import { exportCsv } from '../utils/exportCsv';
 import { useToast } from '../context/ToastContext';
+import api from '../utils/api';
 
 const tabs = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
 const sourceColors = { Instagram: '#E1306C', Shopify: '#96BF48', WhatsApp: '#25D366', Website: '#3A8AE8', 'Mobile App': '#7C6AF7' };
@@ -45,8 +46,34 @@ export default function Orders() {
   const [activeTab, setActiveTab] = useState('All');
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState(mockOrders);
   const [page, setPage] = useState(1);
+  const [apiLoading, setApiLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/api/orders?limit=100&sort=-createdAt').then(data => {
+      if (data.success && data.data?.length > 0) {
+        const mapped = data.data.map(o => ({
+          id: o.orderId || o._id,
+          _id: o._id,
+          customer: o.customerSnapshot?.name || '—',
+          avatar: (o.customerSnapshot?.name || 'U')[0],
+          amount: o.total || 0,
+          status: o.status,
+          date: new Date(o.createdAt).toLocaleDateString(),
+          source: o.source || 'Other',
+          city: o.customerSnapshot?.city || '—',
+          phone: o.customerSnapshot?.phone || '—',
+          items: o.items || [],
+          paymentMethod: o.paymentMethod,
+          paymentStatus: o.paymentStatus,
+          notes: o.notes,
+          courier: o.courier,
+        }));
+        setOrders(mapped);
+      }
+    }).catch(() => {}).finally(() => setApiLoading(false));
+  }, []);
 
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');

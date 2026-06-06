@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, DollarSign, Users, Clock, ShoppingBag, MessageSquare, Truck, UserPlus, CreditCard, RefreshCw } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import PageWrapper from '../components/layout/PageWrapper';
 import StatCard from '../components/ui/StatCard';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
-import { revenueData, ordersBySource, orders, activityFeed } from '../data/mockData';
+import { revenueData, ordersBySource, activityFeed } from '../data/mockData';
+import api from '../utils/api';
 
 const iconMap = { ShoppingBag, MessageSquare, Truck, UserPlus, CreditCard, RefreshCw };
 const activityColors = { order: '#7C6AF7', message: '#3A8AE8', customer: '#1DB87A', payment: '#F5A623' };
+const SOURCE_COLORS = ['#7C6AF7', '#E1306C', '#25D366', '#3A8AE8', '#F5A623'];
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -22,15 +24,40 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
+const fmt = (n) => n >= 1000000 ? `${(n/1000000).toFixed(1)}M` : n >= 1000 ? `${(n/1000).toFixed(0)}K` : String(n);
+
 export default function Dashboard() {
+  const [stats, setStats] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      api.get('/api/analytics/dashboard'),
+      api.get('/api/orders?limit=8&sort=-createdAt'),
+    ]).then(([dash, ord]) => {
+      if (dash.success) setStats(dash.data);
+      if (ord.success) setOrders(ord.data || []);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const totalOrders = stats?.totalOrders ?? '—';
+  const revenue = stats?.revenue != null ? `PKR ${fmt(stats.revenue)}` : '—';
+  const totalCustomers = stats?.totalCustomers ?? '—';
+  const pendingShipments = stats?.pendingShipments ?? '—';
+
+  const sourceData = stats?.ordersBySource
+    ? Object.entries(stats.ordersBySource).map(([name, value], i) => ({ name, value, color: SOURCE_COLORS[i % SOURCE_COLORS.length] }))
+    : ordersBySource;
+
   return (
     <PageWrapper title="Dashboard" subtitle="Welcome back, here's what's happening today">
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        <StatCard title="Total Orders" value="1,284" change="+12%" changeType="positive" icon={ShoppingCart} iconColor="#7C6AF7" />
-        <StatCard title="Revenue" value="PKR 842K" change="+8.2%" changeType="positive" icon={DollarSign} iconColor="#1DB87A" />
-        <StatCard title="Customers" value="3,410" change="+5.1%" changeType="positive" icon={Users} iconColor="#3A8AE8" />
-        <StatCard title="Pending Shipment" value="47" icon={Clock} iconColor="#F5A623" />
+        <StatCard title="Total Orders" value={loading ? '...' : String(totalOrders)} change="+12%" changeType="positive" icon={ShoppingCart} iconColor="#7C6AF7" />
+        <StatCard title="Revenue" value={loading ? '...' : revenue} change="+8.2%" changeType="positive" icon={DollarSign} iconColor="#1DB87A" />
+        <StatCard title="Customers" value={loading ? '...' : String(totalCustomers)} change="+5.1%" changeType="positive" icon={Users} iconColor="#3A8AE8" />
+        <StatCard title="Pending Shipment" value={loading ? '...' : String(pendingShipments)} icon={Clock} iconColor="#F5A623" />
       </div>
 
       {/* Charts Row */}
@@ -39,19 +66,16 @@ export default function Dashboard() {
           <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontWeight: 600, fontSize: '14px', color: '#F0EFF6' }}>Revenue Last 30 Days</div>
-              <div style={{ fontSize: '12px', color: '#55556A', marginTop: '2px' }}>Nov 5 – Dec 4, 2024</div>
+              <div style={{ fontSize: '12px', color: '#55556A', marginTop: '2px' }}>Live data from orders</div>
             </div>
-            <div style={{ fontSize: '22px', fontWeight: 700, color: '#1DB87A' }}>PKR 842K</div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: '#1DB87A' }}>{loading ? '...' : revenue}</div>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={revenueData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <XAxis dataKey="date" tick={{ fill: '#55556A', fontSize: 10 }} tickLine={false} axisLine={false}
-                interval={4} />
-              <YAxis tick={{ fill: '#55556A', fontSize: 10 }} tickLine={false} axisLine={false}
-                tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
+              <XAxis dataKey="date" tick={{ fill: '#55556A', fontSize: 10 }} tickLine={false} axisLine={false} interval={4} />
+              <YAxis tick={{ fill: '#55556A', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}K`} />
               <Tooltip content={<CustomTooltip />} />
-              <Line type="monotone" dataKey="revenue" stroke="#7C6AF7" strokeWidth={2} dot={false}
-                activeDot={{ r: 4, fill: '#7C6AF7', stroke: '#2A2550', strokeWidth: 2 }} />
+              <Line type="monotone" dataKey="revenue" stroke="#7C6AF7" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#7C6AF7', stroke: '#2A2550', strokeWidth: 2 }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
@@ -60,32 +84,32 @@ export default function Dashboard() {
           <div style={{ fontWeight: 600, fontSize: '14px', color: '#F0EFF6', marginBottom: '16px' }}>Orders by Source</div>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <PieChart width={180} height={180}>
-              <Pie data={ordersBySource} cx={85} cy={85} innerRadius={50} outerRadius={80}
-                paddingAngle={3} dataKey="value">
-                {ordersBySource.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              <Pie data={sourceData} cx={85} cy={85} innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
+                {sourceData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Pie>
-              <Tooltip formatter={(v, n) => [`${v}%`, n]} contentStyle={{ background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', fontSize: '12px' }} />
+              <Tooltip formatter={(v, n) => [`${v}`, n]} contentStyle={{ background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', fontSize: '12px' }} />
             </PieChart>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-            {ordersBySource.map((s) => (
+            {sourceData.map((s) => (
               <div key={s.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: s.color }} />
                   <span style={{ fontSize: '12px', color: '#8A8A9E' }}>{s.name}</span>
                 </div>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#F0EFF6' }}>{s.value}%</span>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#F0EFF6' }}>{s.value}</span>
               </div>
             ))}
           </div>
         </Card>
       </div>
 
-      {/* Bottom Row: Table + Activity */}
+      {/* Bottom Row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '16px' }}>
         <Card style={{ padding: 0 }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #1F1F28', fontWeight: 600, fontSize: '14px' }}>
-            Recent Orders
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #1F1F28', fontWeight: 600, fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Recent Orders</span>
+            {loading && <span style={{ fontSize: '12px', color: '#55556A' }}>Loading...</span>}
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -96,21 +120,25 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {orders.slice(0, 8).map(o => (
-                <tr key={o.id}
+              {orders.length === 0 && !loading ? (
+                <tr><td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: '#55556A', fontSize: '13px' }}>No orders yet</td></tr>
+              ) : orders.map(o => (
+                <tr key={o._id}
                   onMouseEnter={e => e.currentTarget.style.background = '#23232B'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   style={{ borderBottom: '1px solid #1F1F28', cursor: 'pointer', transition: 'background 0.1s' }}>
-                  <td style={{ padding: '11px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#7C6AF7' }}>{o.id}</td>
+                  <td style={{ padding: '11px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#7C6AF7' }}>{o.orderId}</td>
                   <td style={{ padding: '11px 16px', fontSize: '13px', color: '#F0EFF6' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#2A2550', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#7C6AF7', flexShrink: 0 }}>{o.avatar}</div>
-                      {o.customer}
+                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#2A2550', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#7C6AF7', flexShrink: 0 }}>
+                        {(o.customerSnapshot?.name || 'U')[0]}
+                      </div>
+                      {o.customerSnapshot?.name || '—'}
                     </div>
                   </td>
-                  <td style={{ padding: '11px 16px', fontSize: '13px', color: '#F0EFF6', fontWeight: 500 }}>PKR {o.amount.toLocaleString()}</td>
+                  <td style={{ padding: '11px 16px', fontSize: '13px', color: '#F0EFF6', fontWeight: 500 }}>PKR {(o.total || 0).toLocaleString()}</td>
                   <td style={{ padding: '11px 16px' }}><Badge status={o.status} /></td>
-                  <td style={{ padding: '11px 16px', fontSize: '12px', color: '#8A8A9E' }}>{o.date}</td>
+                  <td style={{ padding: '11px 16px', fontSize: '12px', color: '#8A8A9E' }}>{new Date(o.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -124,18 +152,8 @@ export default function Dashboard() {
               const Icon = iconMap[item.icon] || ShoppingBag;
               const color = activityColors[item.type] || '#8A8A9E';
               return (
-                <div key={item.id} style={{
-                  display: 'flex', gap: '12px', paddingBottom: '14px',
-                  borderLeft: i < activityFeed.length - 1 ? `2px solid #1F1F28` : 'none',
-                  marginLeft: '10px', paddingLeft: '14px', position: 'relative',
-                }}>
-                  <div style={{
-                    position: 'absolute', left: '-9px', top: '2px',
-                    width: '16px', height: '16px', borderRadius: '50%',
-                    background: color + '22', border: `2px solid ${color}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
+                <div key={item.id} style={{ display: 'flex', gap: '12px', paddingBottom: '14px', borderLeft: i < activityFeed.length - 1 ? `2px solid #1F1F28` : 'none', marginLeft: '10px', paddingLeft: '14px', position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-9px', top: '2px', width: '16px', height: '16px', borderRadius: '50%', background: color + '22', border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Icon size={8} color={color} />
                   </div>
                   <div style={{ flex: 1 }}>

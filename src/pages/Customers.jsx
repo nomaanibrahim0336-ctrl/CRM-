@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, MessageSquare, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import { customers, orders } from '../data/mockData';
+import { customers as mockCustomers, orders as mockOrders } from '../data/mockData';
 import { exportCsv } from '../utils/exportCsv';
 import { useToast } from '../context/ToastContext';
+import api from '../utils/api';
 
 const PAGE_SIZE = 8;
 
@@ -39,12 +40,38 @@ export default function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [activeTab, setActiveTab] = useState('Overview');
   const [page, setPage] = useState(1);
+  const [customers, setCustomers] = useState(mockCustomers);
 
   // Filters
   const [cityFilter, setCityFilter] = useState('All');
   const [sourceFilter, setSourceFilter] = useState('All');
   const [spentFilter, setSpentFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+
+  useEffect(() => {
+    api.get('/api/customers?limit=200').then(data => {
+      if (data.success && data.data?.length > 0) {
+        const mapped = data.data.map(c => ({
+          id: c._id,
+          name: c.name,
+          phone: c.phone || '—',
+          city: c.city || '—',
+          email: c.email || '—',
+          avatar: c.name[0],
+          orders: c.totalOrders || 0,
+          spent: c.totalSpent || 0,
+          source: c.source || 'Other',
+          status: c.isActive ? 'Active' : 'Inactive',
+          joinDate: new Date(c.createdAt).toLocaleDateString(),
+          lastOrder: c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleDateString() : '—',
+          tags: c.tags || [],
+          notes: c.notes || '',
+          address: c.address || '',
+        }));
+        setCustomers(mapped);
+      }
+    }).catch(() => {});
+  }, []);
 
   const filtered = customers.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search) || c.city.toLowerCase().includes(search.toLowerCase());
