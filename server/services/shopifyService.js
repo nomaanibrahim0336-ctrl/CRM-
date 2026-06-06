@@ -2,9 +2,23 @@ const axios = require('axios');
 
 class ShopifyService {
   constructor() {
-    this.shopDomain = process.env.SHOPIFY_SHOP_DOMAIN; // e.g. spunk-9041.myshopify.com
+    this.shopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
     this.accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
     this.apiVersion = process.env.SHOPIFY_API_VERSION || '2024-01';
+  }
+
+  // Load credentials from DB if not set via env vars
+  async loadCredentials() {
+    if (this.shopDomain && this.accessToken) return;
+    try {
+      const Setting = require('../models/Setting');
+      const [domainSetting, tokenSetting] = await Promise.all([
+        Setting.findOne({ key: 'shopify_store_domain' }),
+        Setting.findOne({ key: 'shopify_access_token' }).select('+value'),
+      ]);
+      if (domainSetting?.value) this.shopDomain = domainSetting.value;
+      if (tokenSetting?.value) this.accessToken = tokenSetting.value;
+    } catch (_) {}
   }
 
   get baseUrl() {
@@ -20,6 +34,7 @@ class ShopifyService {
 
   // ── GraphQL ───────────────────────────────────────────────
   async graphql(query, variables = {}) {
+    await this.loadCredentials();
     const url = `https://${this.shopDomain}/admin/api/${this.apiVersion}/graphql.json`;
     const { data } = await axios.post(url, { query, variables }, { headers: this.headers });
     if (data.errors) throw new Error(data.errors.map(e => e.message).join(', '));
@@ -28,6 +43,7 @@ class ShopifyService {
 
   // ── REST ──────────────────────────────────────────────────
   async get(endpoint, params = {}) {
+    await this.loadCredentials();
     const { data } = await axios.get(`${this.baseUrl}${endpoint}`, {
       headers: this.headers,
       params,
@@ -37,6 +53,7 @@ class ShopifyService {
 
   // ── Fetch all orders ──────────────────────────────────────
   async fetchOrders(since = null) {
+    await this.loadCredentials();
     const params = { limit: 250, status: 'any' };
     if (since) params.updated_at_min = since;
 
@@ -58,6 +75,7 @@ class ShopifyService {
 
   // ── Fetch all products ────────────────────────────────────
   async fetchProducts(since = null) {
+    await this.loadCredentials();
     const params = { limit: 250 };
     if (since) params.updated_at_min = since;
 
@@ -78,6 +96,7 @@ class ShopifyService {
 
   // ── Fetch all customers ───────────────────────────────────
   async fetchCustomers(since = null) {
+    await this.loadCredentials();
     const params = { limit: 250 };
     if (since) params.updated_at_min = since;
 

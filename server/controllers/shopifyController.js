@@ -4,14 +4,99 @@ const Customer = require('../models/Customer');
 const Order = require('../models/Order');
 const Setting = require('../models/Setting');
 
+// ── POST /api/shopify/connect ─────────────────────────────
+const connectShopify = async (req, res, next) => {
+  try {
+    let { storeDomain, accessToken } = req.body;
+    if (!storeDomain || !accessToken) {
+      return res.status(400).json({ success: false, error: 'storeDomain and accessToken are required' });
+    }
+
+    // Normalise domain — strip https:// and trailing slashes
+    storeDomain = storeDomain.replace(/^https?:\/\//i, '').replace(/\/$/, '').trim();
+
+    // Test the credentials before saving
+    const axios = require('axios');
+    const testUrl = `https://${storeDomain}/admin/api/2024-01/shop.json`;
+    let shopData;
+    try {
+      const { data } = await axios.get(testUrl, {
+        headers: { 'X-Shopify-Access-Token': accessToken, 'Content-Type': 'application/json' },
+        timeout: 10000,
+      });
+      shopData = data.shop;
+    } catch (e) {
+      const status = e.response?.status;
+      if (status === 401 || status === 403) {
+        return res.status(400).json({ success: false, error: 'Invalid access token — check your Shopify API credentials.' });
+      }
+      if (status === 404) {
+        return res.status(400).json({ success: false, error: 'Store not found — check your store domain.' });
+      }
+      return res.status(400).json({ success: false, error: `Connection failed: ${e.message}` });
+    }
+
+    // Save to DB
+    await Setting.bulkWrite([
+      {
+        updateOne: {
+          filter: { key: 'shopify_store_domain' },
+          update: { $set: { key: 'shopify_store_domain', value: storeDomain, group: 'integrations', isSecret: false, updatedBy: req.user._id } },
+          upsert: true,
+        },
+      },
+      {
+        updateOne: {
+          filter: { key: 'shopify_access_token' },
+          update: { $set: { key: 'shopify_access_token', value: accessToken, group: 'integrations', isSecret: true, updatedBy: req.user._id } },
+          upsert: true,
+        },
+      },
+    ]);
+
+    // Update in-memory service so next sync uses new credentials immediately
+    shopify.shopDomain = storeDomain;
+    shopify.accessToken = accessToken;
+
+    res.json({
+      success: true,
+      data: {
+        connected: true,
+        shop: {
+          name: shopData.name,
+          domain: shopData.domain,
+          email: shopData.email,
+          currency: shopData.currency,
+          plan: shopData.plan_name,
+        },
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── DELETE /api/shopify/connect ────────────────────────────
+const disconnectShopify = async (req, res, next) => {
+  try {
+    await Setting.deleteMany({ key: { $in: ['shopify_store_domain', 'shopify_access_token'] } });
+    shopify.shopDomain = null;
+    shopify.accessToken = null;
+    res.json({ success: true, message: 'Shopify disconnected' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ── GET /api/shopify/status ───────────────────────────────
 const getStatus = async (req, res, next) => {
   try {
-    const configured = !!(process.env.SHOPIFY_SHOP_DOMAIN && process.env.SHOPIFY_ACCESS_TOKEN);
+    await shopify.loadCredentials();
+    const configured = !!(shopify.shopDomain && shopify.accessToken);
     if (!configured) {
       return res.json({
         success: true,
-        data: { connected: false, message: 'SHOPIFY_SHOP_DOMAIN and SHOPIFY_ACCESS_TOKEN not set' },
+        data: { connected: false, message: 'Shopify not connected' },
       });
     }
 
@@ -325,4 +410,4 @@ const handleOrderWebhook = async (req, res) => {
   }
 };
 
-module.exports = { getStatus, syncProducts, syncCustomers, syncOrders, syncAll, getSyncStatus, handleOrderWebhook };
+module.exports = { connectShopify, disconnectShopify, getStatus, syncProducts, syncCustomers, syncOrders, syncAll, getSyncStatus, handleOrderWebhook };

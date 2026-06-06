@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const {
+  connectShopify,
+  disconnectShopify,
   getStatus,
   syncProducts,
   syncCustomers,
@@ -18,6 +20,8 @@ router.post('/webhooks/orders/create', handleOrderWebhook);
 router.use(protect);
 
 router.get('/status', getStatus);
+router.post('/connect', authorize('admin'), connectShopify);
+router.delete('/connect', authorize('admin'), disconnectShopify);
 router.get('/sync/status', getSyncStatus);
 router.post('/sync/products', authorize('admin', 'manager'), syncProducts);
 router.post('/sync/customers', authorize('admin', 'manager'), syncCustomers);
