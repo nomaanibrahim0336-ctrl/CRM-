@@ -65,7 +65,7 @@ const ShipmentSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-generate shipmentId
-ShipmentSchema.pre('save', async function (next) {
+ShipmentSchema.pre('save', async function () {
   if (!this.shipmentId) {
     const count = await mongoose.model('Shipment').countDocuments();
     this.shipmentId = `SHP-${String(count + 1).padStart(4, '0')}`;
@@ -82,7 +82,6 @@ ShipmentSchema.pre('save', async function (next) {
     this.codStatus = 'Pending';
   }
 
-  next();
 });
 
 ShipmentSchema.index({ order: 1 });

@@ -72,22 +72,18 @@ const OrderSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-generate orderId before saving
-OrderSchema.pre('save', async function (next) {
+OrderSchema.pre('save', async function () {
   if (!this.orderId) {
     const count = await mongoose.model('Order').countDocuments();
     this.orderId = `ORD-${String(count + 1).padStart(4, '0')}`;
   }
 
-  // Push status change to history on new or status update
   if (this.isModified('status')) {
     this.statusHistory.push({ status: this.status });
   }
 
-  // Recalculate totals
   this.subtotal = this.items.reduce((sum, i) => sum + i.salePrice * i.qty, 0);
   this.total = this.subtotal - this.discount + this.shippingFee;
-
-  next();
 });
 
 // Virtual: profit on the order
