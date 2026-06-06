@@ -4,7 +4,7 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tool
 import PageWrapper from '../components/layout/PageWrapper';
 import StatCard from '../components/ui/StatCard';
 import Card from '../components/ui/Card';
-import { revenueData, topProducts, ordersBySource, metaAdsData, courierData } from '../data/mockData';
+import { revenueData, topProducts as mockTopProducts, ordersBySource, metaAdsData, courierData } from '../data/mockData';
 import { exportCsv } from '../utils/exportCsv';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
@@ -46,16 +46,31 @@ export default function Analytics() {
   const [range, setRange] = useState('30D');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const [liveStats, setLiveStats] = useState(null);
+  const [liveRevenue, setLiveRevenue] = useState(null);
+  const [liveProducts, setLiveProducts] = useState(null);
 
-  const chartData = getDataForRange(range);
+  useEffect(() => {
+    Promise.all([
+      api.get('/api/analytics/dashboard'),
+      api.get('/api/analytics/sales'),
+      api.get('/api/analytics/products'),
+    ]).then(([dash, sales, prods]) => {
+      if (dash.success) setLiveStats(dash.data);
+      if (sales.success) setLiveRevenue(sales.data);
+      if (prods.success) setLiveProducts(prods.data);
+    }).catch(() => {});
+  }, []);
+
+  const chartData = liveRevenue?.revenueByDay || getDataForRange(range);
   const mult = getKpiMultiplier(range);
-  const totalRevenue = Math.round(chartData.reduce((s, d) => s + d.revenue, 0));
+  const totalRevenue = liveStats?.revenue ?? Math.round(chartData.reduce((s, d) => s + (d.revenue || 0), 0));
 
   const kpis = {
-    revenue: `PKR ${(842000 * mult / 1000).toFixed(0)}K`,
-    orders: Math.round(1284 * mult).toLocaleString(),
-    aov: `PKR ${Math.round(6556 * (range === '90D' ? 1 : mult > 1 ? 1 : 1)).toLocaleString()}`,
-    convRate: `${(3.8 * (range === '7D' ? 0.95 : range === '90D' ? 1.05 : 1)).toFixed(1)}%`,
+    revenue: `PKR ${totalRevenue >= 1000 ? (totalRevenue/1000).toFixed(0)+'K' : totalRevenue}`,
+    orders: liveStats?.totalOrders?.toLocaleString() ?? Math.round(1284 * mult).toLocaleString(),
+    aov: liveStats?.avgOrderValue ? `PKR ${Math.round(liveStats.avgOrderValue).toLocaleString()}` : `PKR ${Math.round(6556).toLocaleString()}`,
+    convRate: `3.8%`,
   };
 
   const inputStyle = { background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '7px', padding: '6px 10px', color: '#F0EFF6', fontSize: '12px', outline: 'none' };
@@ -116,7 +131,7 @@ export default function Analytics() {
         <Card>
           <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '16px' }}>Top Products by Revenue</div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={topProducts} layout="vertical" margin={{ top: 0, right: 16, left: 60, bottom: 0 }}>
+            <BarChart data={liveProducts?.topProducts || mockTopProducts} layout="vertical" margin={{ top: 0, right: 16, left: 60, bottom: 0 }}>
               <XAxis type="number" tick={{ fill: '#55556A', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}K`} />
               <YAxis type="category" dataKey="name" tick={{ fill: '#8A8A9E', fontSize: 11 }} tickLine={false} axisLine={false} />
               <Tooltip formatter={v => [`PKR ${v.toLocaleString()}`, 'Revenue']} contentStyle={{ background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', fontSize: '12px' }} />

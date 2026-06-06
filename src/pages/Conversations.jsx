@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, Bot, MoreVertical, Search, Phone, Video, Info } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
-import { conversations } from '../data/mockData';
+import { conversations as mockConversations } from '../data/mockData';
+import api from '../utils/api';
 
 // Channel config: color, label, icon letter/emoji
 const CHANNEL_CONFIG = {
@@ -61,11 +62,30 @@ const quickReplies = [
 
 export default function Conversations() {
   const [activeTab, setActiveTab] = useState('All');
-  const [selectedConv, setSelectedConv] = useState(conversations[0]);
+  const [conversations, setConversations] = useState(mockConversations);
+  const [selectedConv, setSelectedConv] = useState(mockConversations[0]);
   const [message, setMessage] = useState('');
   const [aiEnabled, setAiEnabled] = useState(true);
   const [localMessages, setLocalMessages] = useState({});
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    api.get('/api/conversations?limit=100').then(data => {
+      if (data.success && data.data?.length > 0) {
+        const mapped = data.data.map(c => ({
+          id: c._id, customer: c.customerName || c.customer || 'Unknown',
+          channel: c.channel || 'WhatsApp', status: c.status || 'Open',
+          unread: c.unreadCount || 0,
+          lastMessage: c.lastMessage?.text || c.messages?.[c.messages.length - 1]?.text || '',
+          time: c.updatedAt ? new Date(c.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          messages: (c.messages || []).map(m => ({ id: m._id, sender: m.sender === 'agent' ? 'agent' : 'customer', text: m.text, time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '' })),
+          avatar: c.customerName?.[0]?.toUpperCase() || '?',
+        }));
+        setConversations(mapped);
+        setSelectedConv(mapped[0]);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Channel filter tabs: show grouped channels + utility filters
   const channelTabs = ['All', ...Object.keys(CHANNEL_CONFIG), 'Unread', 'Open', 'Closed'];

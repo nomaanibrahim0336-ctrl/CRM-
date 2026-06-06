@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, BarChart2, FileText,
   Download, ArrowUpRight, ArrowDownRight, Calculator, PieChart as PieIcon,
@@ -11,6 +11,7 @@ import {
 import {
   monthlyFinancials, expenseBreakdown, productProfitability, cashflow, taxSummary,
 } from '../data/mockData';
+import api from '../utils/api';
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -76,11 +77,23 @@ const TABS = ['P&L Statement', 'Revenue', 'Expenses', 'Cash Flow', 'Product Prof
 export default function Financials() {
   const [activeTab, setActiveTab] = useState('P&L Statement');
   const [period, setPeriod] = useState('Dec 2024');
+  const [liveData, setLiveData] = useState(null);
+
+  useEffect(() => {
+    api.get('/api/financials/pnl').then(data => {
+      if (data.success && data.data?.length > 0) setLiveData(data.data);
+    }).catch(() => {});
+  }, []);
 
   const selectedIdx = monthlyFinancials.findIndex(m => `${m.month} 2024` === period);
   const curIdx = selectedIdx >= 0 ? selectedIdx : monthlyFinancials.length - 1;
-  const cur = monthlyFinancials[curIdx];
+  const mockCur = monthlyFinancials[curIdx];
   const prev = monthlyFinancials[Math.max(0, curIdx - 1)];
+  // Overlay live totals when backend has data
+  const liveSummary = liveData?.[liveData.length - 1];
+  const cur = liveSummary
+    ? { ...mockCur, revenue: liveSummary.revenue ?? mockCur.revenue, cogs: liveSummary.cogs ?? mockCur.cogs, grossProfit: liveSummary.grossProfit ?? mockCur.grossProfit, netProfit: liveSummary.netProfit ?? mockCur.netProfit, orders: liveSummary.orderCount ?? mockCur.orders }
+    : mockCur;
   // data up to and including selected month
   const chartDataUpTo = monthlyFinancials.slice(0, curIdx + 1);
 
