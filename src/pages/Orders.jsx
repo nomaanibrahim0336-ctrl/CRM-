@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Download, MoreVertical, X, Package, MessageSquare, Truck, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Download, MoreVertical, X, Package, MessageSquare, Truck, User, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
@@ -87,6 +87,21 @@ export default function Orders() {
   const [trackingCourier, setTrackingCourier] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
 
+  // Create Order modal
+  const [createModal, setCreateModal] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerResults, setCustomerResults] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [productSearch, setProductSearch] = useState('');
+  const [productResults, setProductResults] = useState([]);
+  const [orderItems, setOrderItems] = useState([]);
+  const [orderForm, setOrderForm] = useState({ paymentMethod: 'COD', source: 'WhatsApp', shippingFee: '200', discount: '0', notes: '' });
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
+
+  // Status update
+  const [statusModal, setStatusModal] = useState(null); // { orderId, _id, currentStatus }
+
   useClickOutside(actionMenuRef, () => setActionMenu(null));
 
   const filtered = orders.filter(o => {
@@ -121,6 +136,105 @@ export default function Orders() {
     addToast('Tracking number saved', 'success');
   };
 
+  // Search customers for create order
+  useEffect(() => {
+    if (!customerSearch.trim()) { setCustomerResults([]); return; }
+    const t = setTimeout(() => {
+      api.get(`/api/customers?search=${encodeURIComponent(customerSearch)}&limit=6`).then(d => {
+        if (d.success) setCustomerResults(d.data || []);
+      }).catch(() => {});
+    }, 300);
+    return () => clearTimeout(t);
+  }, [customerSearch]);
+
+  // Search products for create order
+  useEffect(() => {
+    if (!productSearch.trim()) { setProductResults([]); return; }
+    const t = setTimeout(() => {
+      api.get(`/api/products?search=${encodeURIComponent(productSearch)}&limit=6`).then(d => {
+        if (d.success) setProductResults(d.data || []);
+      }).catch(() => {});
+    }, 300);
+    return () => clearTimeout(t);
+  }, [productSearch]);
+
+  const addItem = (product) => {
+    setOrderItems(prev => {
+      const exists = prev.find(i => i.productId === product._id);
+      if (exists) return prev.map(i => i.productId === product._id ? { ...i, qty: i.qty + 1 } : i);
+      return [...prev, { productId: product._id, name: product.name, sku: product.sku, salePrice: product.salePrice, qty: 1, stock: product.stock }];
+    });
+    setProductSearch('');
+    setProductResults([]);
+  };
+
+  const removeItem = (productId) => setOrderItems(prev => prev.filter(i => i.productId !== productId));
+  const updateQty = (productId, qty) => setOrderItems(prev => prev.map(i => i.productId === productId ? { ...i, qty: Math.max(1, parseInt(qty) || 1) } : i));
+
+  const orderSubtotal = orderItems.reduce((s, i) => s + i.salePrice * i.qty, 0);
+  const orderTotal = orderSubtotal + parseFloat(orderForm.shippingFee || 0) - parseFloat(orderForm.discount || 0);
+
+  const handleCreateOrder = async () => {
+    if (!selectedCustomer) { setCreateError('Please select a customer.'); return; }
+    if (orderItems.length === 0) { setCreateError('Please add at least one product.'); return; }
+    setCreating(true);
+    setCreateError('');
+    try {
+      const res = await api.post('/api/orders', {
+        customerId: selectedCustomer._id,
+        items: orderItems.map(i => ({ productId: i.productId, qty: i.qty, salePrice: i.salePrice })),
+        paymentMethod: orderForm.paymentMethod,
+        source: orderForm.source,
+        shippingFee: parseFloat(orderForm.shippingFee) || 0,
+        discount: parseFloat(orderForm.discount) || 0,
+        notes: orderForm.notes,
+      });
+      if (res.success) {
+        const o = res.data;
+        const newOrder = {
+          id: o.orderId || o._id, _id: o._id,
+          customer: o.customerSnapshot?.name || selectedCustomer.name,
+          avatar: (o.customerSnapshot?.name || selectedCustomer.name)[0],
+          amount: o.total || orderTotal,
+          status: o.status || 'Pending',
+          date: new Date(o.createdAt).toLocaleDateString(),
+          source: o.source, city: o.customerSnapshot?.city || selectedCustomer.city || '—',
+          phone: o.customerSnapshot?.phone || selectedCustomer.phone || '—',
+          items: o.items || [], paymentMethod: o.paymentMethod,
+          paymentStatus: o.paymentStatus, notes: o.notes,
+          products: orderItems.map(i => i.name),
+          payment: o.paymentMethod,
+        };
+        setOrders(prev => [newOrder, ...prev]);
+        setCreateModal(false);
+        setSelectedCustomer(null); setCustomerSearch(''); setOrderItems([]);
+        setOrderForm({ paymentMethod: 'COD', source: 'WhatsApp', shippingFee: '200', discount: '0', notes: '' });
+        addToast(`Order ${newOrder.id} created successfully!`, 'success');
+      } else {
+        setCreateError(res.error || 'Failed to create order');
+      }
+    } catch (err) {
+      setCreateError(err.message || 'Failed to create order');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleStatusUpdate = async (orderId, _id, newStatus) => {
+    try {
+      const res = await api.put(`/api/orders/${_id}/status`, { status: newStatus });
+      if (res.success) {
+        updateOrderStatus(orderId, newStatus);
+        setStatusModal(null);
+        addToast(`Order moved to ${newStatus}`, 'success');
+      } else {
+        addToast(res.error || 'Status update failed', 'error');
+      }
+    } catch (err) {
+      addToast('Status update failed', 'error');
+    }
+  };
+
   const inputStyle = { background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '7px', padding: '7px 10px', color: '#F0EFF6', fontSize: '12px', outline: 'none' };
 
   const dmMessages = selectedOrder ? (mockDMs[selectedOrder.customer] || mockDMs.default) : [];
@@ -135,13 +249,17 @@ export default function Orders() {
         ))}
       </div>
 
-      {/* Search + Export */}
+      {/* Search + Export + New Order */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
           <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#55556A' }} />
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search orders..."
             style={{ width: '100%', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '8px 12px 8px 32px', color: '#F0EFF6', fontSize: '13px', outline: 'none' }} />
         </div>
+        <button onClick={() => { setCreateModal(true); setCreateError(''); }}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#7C6AF7', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+          <Plus size={14} /> New Order
+        </button>
         <Button variant="secondary" onClick={() => { exportCsv('orders.csv', filtered.map(o => ({ ID: o.id, Customer: o.customer, Amount: o.amount, Status: o.status, Source: o.source, Payment: o.payment, Date: o.date }))); addToast('CSV exported', 'success'); }}>
           <Download size={14} /> Export
         </Button>
@@ -255,8 +373,7 @@ export default function Orders() {
         <div ref={actionMenuRef} style={{ position: 'fixed', top: actionMenu.top, right: actionMenu.right, width: '200px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 500, overflow: 'hidden' }}>
           {[
             { label: 'View Details', action: () => { setSelectedOrder(orders.find(o => o.id === actionMenu.orderId)); setActionMenu(null); } },
-            { label: 'Edit Order', action: () => { addToast('Edit coming soon', 'info'); setActionMenu(null); } },
-            { label: 'Mark as Shipped', action: () => updateOrderStatus(actionMenu.orderId, 'Shipped') },
+            { label: 'Update Status', action: () => { const o = orders.find(x => x.id === actionMenu.orderId); setStatusModal({ orderId: o.id, _id: o._id, currentStatus: o.status }); setActionMenu(null); } },
             { label: 'Add Tracking Number', action: () => { setTrackingModal(actionMenu.orderId); setTrackingCourier(''); setTrackingNumber(''); setActionMenu(null); } },
             { label: 'Print Invoice', action: () => { addToast('Printing...', 'info'); setActionMenu(null); } },
           ].map(item => (
@@ -267,7 +384,8 @@ export default function Orders() {
           ))}
           <div style={{ height: '1px', background: '#2A2A35' }} />
           <button onClick={() => {
-            if (window.confirm('Cancel this order?')) updateOrderStatus(actionMenu.orderId, 'Cancelled');
+            const o = orders.find(x => x.id === actionMenu.orderId);
+            if (window.confirm('Cancel this order?')) handleStatusUpdate(o.id, o._id, 'Cancelled');
           }} style={{ width: '100%', padding: '10px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: '13px', color: '#E2514A', cursor: 'pointer' }}
             onMouseEnter={e => e.currentTarget.style.background = '#3D141422'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -375,6 +493,192 @@ export default function Orders() {
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
               <Button variant="primary" style={{ flex: 1 }} onClick={() => { setTrackingModal(selectedOrder.id); setTrackingCourier(''); setTrackingNumber(''); }}><Truck size={14} /> Assign Courier</Button>
               <Button variant="secondary"><MessageSquare size={14} /> Message</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Status Update Modal ── */}
+      {statusModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#141418', border: '1px solid #2A2A35', borderRadius: '12px', padding: '24px', width: '340px' }}>
+            <div style={{ fontWeight: 700, color: '#F0EFF6', fontSize: '15px', marginBottom: '6px' }}>Update Order Status</div>
+            <div style={{ fontSize: '12px', color: '#55556A', marginBottom: '18px' }}>Current: <span style={{ color: '#F0EFF6' }}>{statusModal.currentStatus}</span></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {['Confirmed', 'Processing', 'Shipped', 'Delivered', 'Returned', 'Cancelled'].map(s => {
+                const colors = { Confirmed: '#3A8AE8', Processing: '#F5A623', Shipped: '#7C6AF7', Delivered: '#1DB87A', Returned: '#E2514A', Cancelled: '#55556A' };
+                const isCurrent = s === statusModal.currentStatus;
+                return (
+                  <button key={s} onClick={() => handleStatusUpdate(statusModal.orderId, statusModal._id, s)} disabled={isCurrent}
+                    style={{ padding: '10px 14px', background: isCurrent ? '#1C1C22' : '#141418', border: `1px solid ${isCurrent ? colors[s] + '55' : '#2A2A35'}`, borderRadius: '8px', color: isCurrent ? colors[s] : '#F0EFF6', fontSize: '13px', fontWeight: isCurrent ? 600 : 400, cursor: isCurrent ? 'default' : 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                    onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.borderColor = colors[s] + '66'; }}
+                    onMouseLeave={e => { if (!isCurrent) e.currentTarget.style.borderColor = '#2A2A35'; }}>
+                    {s} {isCurrent && <span style={{ fontSize: '11px' }}>← current</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <button onClick={() => setStatusModal(null)} style={{ width: '100%', marginTop: '14px', padding: '9px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Create Order Modal ── */}
+      {createModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: '#141418', border: '1px solid #2A2A35', borderRadius: '16px', width: '640px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            {/* Header */}
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #1F1F28', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '32px', height: '32px', background: '#2A2550', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Package size={15} color="#7C6AF7" />
+                </div>
+                <div style={{ fontWeight: 700, fontSize: '16px', color: '#F0EFF6' }}>Create New Order</div>
+              </div>
+              <button onClick={() => setCreateModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#55556A' }}><X size={18} /></button>
+            </div>
+
+            <div style={{ overflowY: 'auto', flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+              {/* Customer Search */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#8A8A9E', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Customer *</label>
+                {selectedCustomer ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#1C1C22', border: '1px solid #7C6AF755', borderRadius: '8px' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#F0EFF6', fontSize: '13px' }}>{selectedCustomer.name}</div>
+                      <div style={{ fontSize: '11px', color: '#8A8A9E' }}>{selectedCustomer.phone} · {selectedCustomer.city}</div>
+                    </div>
+                    <button onClick={() => { setSelectedCustomer(null); setCustomerSearch(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#55556A' }}><X size={14} /></button>
+                  </div>
+                ) : (
+                  <div style={{ position: 'relative' }}>
+                    <input value={customerSearch} onChange={e => setCustomerSearch(e.target.value)} placeholder="Type customer name or phone..."
+                      style={{ width: '100%', boxSizing: 'border-box', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '10px 12px', color: '#F0EFF6', fontSize: '13px', outline: 'none' }} />
+                    {customerResults.length > 0 && (
+                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', marginTop: '4px', zIndex: 10, overflow: 'hidden' }}>
+                        {customerResults.map(c => (
+                          <button key={c._id} onClick={() => { setSelectedCustomer(c); setCustomerSearch(''); setCustomerResults([]); }}
+                            style={{ width: '100%', padding: '10px 14px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', color: '#F0EFF6' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#23232B'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                            <div style={{ fontSize: '13px', fontWeight: 500 }}>{c.name}</div>
+                            <div style={{ fontSize: '11px', color: '#55556A' }}>{c.phone} · {c.city}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Product Search */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#8A8A9E', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Products *</label>
+                <div style={{ position: 'relative', marginBottom: '10px' }}>
+                  <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Search and add products..."
+                    style={{ width: '100%', boxSizing: 'border-box', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '10px 12px', color: '#F0EFF6', fontSize: '13px', outline: 'none' }} />
+                  {productResults.length > 0 && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', marginTop: '4px', zIndex: 10, overflow: 'hidden' }}>
+                      {productResults.map(p => (
+                        <button key={p._id} onClick={() => addItem(p)}
+                          style={{ width: '100%', padding: '10px 14px', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', color: '#F0EFF6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#23232B'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 500 }}>{p.name}</div>
+                            <div style={{ fontSize: '11px', color: '#55556A' }}>{p.sku} · Stock: {p.stock}</div>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#7C6AF7', fontWeight: 600 }}>PKR {p.salePrice?.toLocaleString()}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {orderItems.length > 0 && (
+                  <div style={{ border: '1px solid #2A2A35', borderRadius: '8px', overflow: 'hidden' }}>
+                    {orderItems.map(item => (
+                      <div key={item.productId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderBottom: '1px solid #1F1F28' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', color: '#F0EFF6' }}>{item.name}</div>
+                          <div style={{ fontSize: '11px', color: '#55556A' }}>PKR {item.salePrice?.toLocaleString()} each</div>
+                        </div>
+                        <input type="number" min="1" max={item.stock} value={item.qty} onChange={e => updateQty(item.productId, e.target.value)}
+                          style={{ width: '60px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '6px', padding: '5px 8px', color: '#F0EFF6', fontSize: '13px', outline: 'none', textAlign: 'center' }} />
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#F0EFF6', minWidth: '80px', textAlign: 'right' }}>PKR {(item.salePrice * item.qty).toLocaleString()}</div>
+                        <button onClick={() => removeItem(item.productId)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E2514A', display: 'flex' }}><Trash2 size={14} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Order Details */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#8A8A9E', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Method</label>
+                  <select value={orderForm.paymentMethod} onChange={e => setOrderForm(f => ({ ...f, paymentMethod: e.target.value }))}
+                    style={{ width: '100%', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '10px 12px', color: '#F0EFF6', fontSize: '13px', outline: 'none', cursor: 'pointer' }}>
+                    {['COD', 'Card', 'JazzCash', 'EasyPaisa', 'Bank Transfer'].map(p => <option key={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#8A8A9E', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Source</label>
+                  <select value={orderForm.source} onChange={e => setOrderForm(f => ({ ...f, source: e.target.value }))}
+                    style={{ width: '100%', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '10px 12px', color: '#F0EFF6', fontSize: '13px', outline: 'none', cursor: 'pointer' }}>
+                    {['WhatsApp', 'Instagram', 'Shopify', 'Website', 'Phone', 'Walk-in'].map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#8A8A9E', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Shipping Fee (PKR)</label>
+                  <input type="number" value={orderForm.shippingFee} onChange={e => setOrderForm(f => ({ ...f, shippingFee: e.target.value }))}
+                    style={{ width: '100%', boxSizing: 'border-box', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '10px 12px', color: '#F0EFF6', fontSize: '13px', outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#8A8A9E', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Discount (PKR)</label>
+                  <input type="number" value={orderForm.discount} onChange={e => setOrderForm(f => ({ ...f, discount: e.target.value }))}
+                    style={{ width: '100%', boxSizing: 'border-box', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '10px 12px', color: '#F0EFF6', fontSize: '13px', outline: 'none' }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#8A8A9E', fontWeight: 600, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notes</label>
+                <textarea value={orderForm.notes} onChange={e => setOrderForm(f => ({ ...f, notes: e.target.value }))} rows={2} placeholder="Special instructions, gift message, etc."
+                  style={{ width: '100%', boxSizing: 'border-box', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '10px 12px', color: '#F0EFF6', fontSize: '13px', outline: 'none', resize: 'vertical' }} />
+              </div>
+
+              {/* Order Summary */}
+              {orderItems.length > 0 && (
+                <div style={{ background: '#1C1C22', borderRadius: '10px', padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A8A9E', marginBottom: '6px' }}>
+                    <span>Subtotal</span><span>PKR {orderSubtotal.toLocaleString()}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8A8A9E', marginBottom: '6px' }}>
+                    <span>Shipping</span><span>PKR {(parseFloat(orderForm.shippingFee) || 0).toLocaleString()}</span>
+                  </div>
+                  {parseFloat(orderForm.discount) > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#1DB87A', marginBottom: '6px' }}>
+                      <span>Discount</span><span>- PKR {(parseFloat(orderForm.discount) || 0).toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div style={{ borderTop: '1px solid #2A2A35', paddingTop: '8px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: 700, color: '#F0EFF6' }}>
+                    <span>Total</span><span>PKR {orderTotal.toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Error */}
+              {createError && (
+                <div style={{ padding: '10px 14px', background: '#3D1414', border: '1px solid #E2514A33', borderRadius: '8px', color: '#E2514A', fontSize: '13px' }}>{createError}</div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #1F1F28', display: 'flex', gap: '10px', justifyContent: 'flex-end', flexShrink: 0 }}>
+              <button onClick={() => setCreateModal(false)} style={{ padding: '9px 18px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={handleCreateOrder} disabled={creating}
+                style={{ padding: '9px 22px', background: creating ? '#55556A' : '#7C6AF7', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: creating ? 'default' : 'pointer' }}>
+                {creating ? 'Creating...' : 'Create Order'}
+              </button>
             </div>
           </div>
         </div>
