@@ -58,13 +58,12 @@ function AccountingRow({ label, value, indent = 0, bold, color, borderTop, borde
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       padding: `${bold ? '14px' : '10px'} 0`,
-      paddingLeft: indent * 20,
+      paddingLeft: highlight ? 20 + indent * 20 : indent * 20,
+      paddingRight: highlight ? 20 : 0,
       borderTop: borderTop ? '1px solid #2A2A35' : undefined,
       borderBottom: borderBottom ? '1px solid #2A2A35' : undefined,
       background: highlight ? '#1C1C22' : 'transparent',
       margin: highlight ? '0 -20px' : undefined,
-      paddingLeft: highlight ? 20 + indent * 20 : indent * 20,
-      paddingRight: highlight ? 20 : 0,
     }}>
       <span style={{ fontSize: bold ? '14px' : '13px', color: bold ? '#F0EFF6' : '#8A8A9E', fontWeight: bold ? 700 : 400 }}>{label}</span>
       <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: bold ? '15px' : '13px', fontWeight: bold ? 700 : 500, color: color || (bold ? '#F0EFF6' : '#8A8A9E') }}>{value}</span>
