@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../utils/api';
 import {
   Truck, Package, MapPin, Clock, CheckCircle, XCircle, AlertTriangle,
   RotateCcw, Plus, Search, Download, RefreshCw, ChevronDown, Eye,
@@ -32,7 +33,7 @@ const STATUS_CFG = {
   Failed:           { color: '#E2514A', bg: '#3D1414', icon: AlertTriangle },
 };
 
-const shipments = [
+const shipments_mock = [
   { id: 'SHP-10291', orderId: '#ORD-7841', customer: 'Aisha Malik', phone: '+92 300 1234567', city: 'Karachi', courier: 'TCS',      trackingId: 'TCS-88291', status: 'Delivered',          weight: '1.2 kg', cod: 12500, bookedOn: '2024-12-02', deliveredOn: '2024-12-04', attempts: 1, product: 'Nike Air Max 270' },
   { id: 'SHP-10290', orderId: '#ORD-7840', customer: 'Bilal Ahmed',  phone: '+92 321 9876543', city: 'Lahore',  courier: 'Leopards', trackingId: 'LEP-44512', status: 'In Transit',         weight: '0.6 kg', cod: 8900,  bookedOn: '2024-12-02', deliveredOn: null,           attempts: 0, product: 'Samsung Galaxy Buds' },
   { id: 'SHP-10289', orderId: '#ORD-7839', customer: 'Sara Khan',    phone: '+92 333 5556677', city: 'Islamabad', courier: 'BlueEx', trackingId: 'BEX-22987', status: 'Pickup Pending',     weight: '2.1 kg', cod: 19800, bookedOn: '2024-12-03', deliveredOn: null,           attempts: 0, product: 'Zara Dress + H&M Blazer' },
@@ -199,6 +200,31 @@ export default function Courier() {
   const [selected, setSelected] = useState(null);
   const [showDetail, setShowDetail] = useState(false);
   const [bookingForm, setBookingForm] = useState({ customer: '', phone: '', city: '', address: '', weight: '', cod: '', courier: 'TCS', product: '', notes: '' });
+  const [shipments, setShipments] = useState(shipments_mock);
+
+  useEffect(() => {
+    api.get('/api/courier?limit=200').then(data => {
+      if (data.success && data.data?.length > 0) {
+        const mapped = data.data.map(s => ({
+          id: s.shipmentId || s._id,
+          orderId: s.orderId || '—',
+          customer: s.customerName || s.customer?.name || '—',
+          phone: s.customerPhone || '—',
+          city: s.city || '—',
+          courier: s.courierName || s.courier || 'TCS',
+          trackingId: s.trackingNumber || s.trackingId || '—',
+          status: s.status || 'Booked',
+          weight: s.weight ? `${s.weight} kg` : '—',
+          cod: s.codAmount || 0,
+          bookedOn: s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—',
+          deliveredOn: s.deliveredAt ? new Date(s.deliveredAt).toLocaleDateString() : null,
+          attempts: s.deliveryAttempts || 0,
+          product: s.items?.[0]?.name || '—',
+        }));
+        setShipments(mapped);
+      }
+    }).catch(() => {});
+  }, []);
 
   const filteredShipments = shipments.filter(s => {
     if (statusFilter !== 'All' && s.status !== statusFilter) return false;
@@ -208,6 +234,11 @@ export default function Courier() {
   });
 
   const returns = shipments.filter(s => s.status === 'Returned' || s.status === 'Failed');
+  const totalShipments = shipments.length;
+  const delivered = shipments.filter(s => s.status === 'Delivered').length;
+  const inTransit = shipments.filter(s => s.status === 'In Transit').length;
+  const pickupPending = shipments.filter(s => s.status === 'Pickup Pending').length;
+  const totalReturns = returns.length;
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: '#0D0D0F' }}>
@@ -252,12 +283,12 @@ export default function Courier() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* KPI Row */}
             <div style={{ display: 'flex', gap: '16px' }}>
-              <KPICard label="Total Shipments" value="1,284" sub="Last 30 days" trend="↑ 12% vs last month" trendUp />
-              <KPICard label="Delivered" value="431" sub="93.8% delivery rate" color="#1DB87A" trend="↑ 2.1%" trendUp />
-              <KPICard label="In Transit" value="87" sub="Avg 2.3 days delivery" color="#3A8AE8" />
-              <KPICard label="Pending Pickup" value="29" sub="3 urgent (>24h)" color="#F5A623" trend="↓ 5 vs yesterday" trendUp={false} />
-              <KPICard label="Returns" value="41" sub="4.8% return rate" color="#E2514A" trend="↑ 0.3%" trendUp={false} />
-              <KPICard label="COD Pending" value="PKR 3.84L" sub="38 shipments" color="#7C6AF7" />
+              <KPICard label="Total Shipments" value={String(totalShipments)} sub="All time" />
+              <KPICard label="Delivered" value={String(delivered)} sub={totalShipments ? `${Math.round(delivered/totalShipments*100)}% delivery rate` : '—'} color="#1DB87A" />
+              <KPICard label="In Transit" value={String(inTransit)} sub="Active shipments" color="#3A8AE8" />
+              <KPICard label="Pending Pickup" value={String(pickupPending)} color="#F5A623" />
+              <KPICard label="Returns" value={String(totalReturns)} sub={totalShipments ? `${Math.round(totalReturns/totalShipments*100)}% return rate` : '—'} color="#E2514A" />
+              <KPICard label="COD Pending" value={`PKR ${shipments.filter(s=>s.status!=='Delivered').reduce((a,s)=>a+s.cod,0).toLocaleString()}`} color="#7C6AF7" />
             </div>
 
             {/* Charts Row */}
