@@ -105,11 +105,38 @@ export default function Conversations() {
     ...(localMessages[selectedConv?.id] || []),
   ];
 
-  const handleSend = () => {
-    if (!message.trim() || !selectedConv) return;
-    const newMsg = { id: Date.now(), sender: 'agent', text: message, time: 'now', isBot: false };
-    setLocalMessages(prev => ({ ...prev, [selectedConv.id]: [...(prev[selectedConv.id] || []), newMsg] }));
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async () => {
+    if (!message.trim() || !selectedConv || sending) return;
+    const text = message.trim();
     setMessage('');
+    setSending(true);
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMsg = { id: tempId, sender: 'agent', text, time: 'now', isBot: false };
+    setLocalMessages(prev => ({ ...prev, [selectedConv.id]: [...(prev[selectedConv.id] || []), optimisticMsg] }));
+    try {
+      const res = await api.post(`/api/conversations/${selectedConv.id}/messages`, { body: text, sender: 'agent' });
+      if (res.success) {
+        const msgs = res.data?.messages || [];
+        const saved = msgs[msgs.length - 1];
+        setLocalMessages(prev => ({
+          ...prev,
+          [selectedConv.id]: (prev[selectedConv.id] || []).map(m => m.id === tempId
+            ? { id: saved?._id || tempId, sender: 'agent', text: saved?.body || text, time: saved?.sentAt ? new Date(saved.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'now', isBot: false }
+            : m),
+        }));
+        setConversations(prev => prev.map(c => c.id === selectedConv.id ? { ...c, lastMessage: text, time: 'now' } : c));
+      } else {
+        setLocalMessages(prev => ({ ...prev, [selectedConv.id]: (prev[selectedConv.id] || []).filter(m => m.id !== tempId) }));
+        setMessage(text);
+      }
+    } catch (err) {
+      setLocalMessages(prev => ({ ...prev, [selectedConv.id]: (prev[selectedConv.id] || []).filter(m => m.id !== tempId) }));
+      setMessage(text);
+    } finally {
+      setSending(false);
+    }
   };
 
   // Count per channel for badges
@@ -315,9 +342,9 @@ export default function Conversations() {
               rows={1}
               style={{ flex: 1, background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '10px', padding: '10px 14px', color: '#F0EFF6', fontSize: '13px', outline: 'none', resize: 'none', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }}
             />
-            <button onClick={handleSend} style={{
+            <button onClick={handleSend} disabled={sending} style={{
               background: CHANNEL_CONFIG[selectedConv.channel]?.color || '#7C6AF7',
-              border: 'none', borderRadius: '10px', padding: '10px 14px', cursor: 'pointer',
+              border: 'none', borderRadius: '10px', padding: '10px 14px', cursor: sending ? 'default' : 'pointer', opacity: sending ? 0.6 : 1,
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
               <Send size={15} color="#fff" />
