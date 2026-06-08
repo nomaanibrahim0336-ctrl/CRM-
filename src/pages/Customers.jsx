@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MessageSquare, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, MessageSquare, Download, ChevronLeft, ChevronRight, Plus, X, Edit2 } from 'lucide-react';
 import PageWrapper from '../components/layout/PageWrapper';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
@@ -47,6 +47,72 @@ export default function Customers() {
   const [sourceFilter, setSourceFilter] = useState('All');
   const [spentFilter, setSpentFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+
+  const emptyForm = { name: '', phone: '', email: '', city: '', address: '', source: 'Other', notes: '', tags: '' };
+  const [formModal, setFormModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  const openAddModal = () => { setEditingId(null); setForm(emptyForm); setSaveError(''); setFormModal(true); };
+  const openEditModal = (c) => {
+    setEditingId(c.id);
+    setForm({ name: c.name, phone: c.phone === '—' ? '' : c.phone, email: c.email === '—' ? '' : c.email, city: c.city === '—' ? '' : c.city, address: c.address || '', source: c.source || 'Other', notes: c.notes || '', tags: (c.tags || []).join(', ') });
+    setSaveError('');
+    setFormModal(true);
+  };
+
+  const handleSaveCustomer = async () => {
+    if (!form.name.trim() || !form.phone.trim()) { setSaveError('Name and phone are required'); return; }
+    setSaving(true);
+    setSaveError('');
+    const payload = {
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim() || undefined,
+      city: form.city.trim() || undefined,
+      address: form.address.trim() || undefined,
+      source: form.source,
+      notes: form.notes.trim() || undefined,
+      tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+    };
+    try {
+      const res = editingId
+        ? await api.put(`/api/customers/${editingId}`, payload)
+        : await api.post('/api/customers', payload);
+      if (res.success) {
+        const c = res.data;
+        const mapped = {
+          id: c._id,
+          name: c.name,
+          phone: c.phone || '—',
+          city: c.city || '—',
+          email: c.email || '—',
+          avatar: c.name[0],
+          orders: c.totalOrders || 0,
+          spent: c.totalSpent || 0,
+          source: c.source || 'Other',
+          status: c.isActive ? 'Active' : 'Inactive',
+          joinDate: new Date(c.createdAt).toLocaleDateString(),
+          lastOrder: c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleDateString() : '—',
+          tags: c.tags || [],
+          notes: c.notes || '',
+          address: c.address || '',
+        };
+        setCustomers(prev => editingId ? prev.map(x => x.id === editingId ? mapped : x) : [mapped, ...prev]);
+        if (editingId && selectedCustomer && selectedCustomer.id === editingId) setSelectedCustomer(mapped);
+        addToast(editingId ? 'Customer updated' : 'Customer created', 'success');
+        setFormModal(false);
+      } else {
+        setSaveError(res.message || 'Failed to save customer');
+      }
+    } catch (err) {
+      setSaveError(err.message || 'Failed to save customer');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     api.get('/api/customers?limit=200').then(data => {
@@ -103,6 +169,7 @@ export default function Customers() {
         actions={
           <>
             <Button variant="secondary" onClick={() => setSelectedCustomer(null)}>← Back</Button>
+            <Button variant="secondary" onClick={() => openEditModal(selectedCustomer)}><Edit2 size={14} /> Edit</Button>
             <Button variant="primary"><MessageSquare size={14} /> Message</Button>
           </>
         }
@@ -222,7 +289,8 @@ export default function Customers() {
   }
 
   return (
-    <PageWrapper title="Customers" subtitle={`${customers.length} total customers`}>
+    <PageWrapper title="Customers" subtitle={`${customers.length} total customers`}
+      actions={<Button variant="primary" onClick={openAddModal}><Plus size={14} /> Add Customer</Button>}>
       {/* Search + Export */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
         <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
@@ -285,7 +353,10 @@ export default function Customers() {
                 <td style={{ padding: '12px 14px', fontSize: '12px', color: '#8A8A9E' }}>{c.source}</td>
                 <td style={{ padding: '12px 14px' }}><Badge status={c.status} /></td>
                 <td style={{ padding: '12px 14px' }} onClick={e => e.stopPropagation()}>
-                  <Button variant="ghost" size="sm"><MessageSquare size={13} /></Button>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <Button variant="ghost" size="sm" onClick={() => openEditModal(c)}><Edit2 size={13} /></Button>
+                    <Button variant="ghost" size="sm"><MessageSquare size={13} /></Button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -316,6 +387,56 @@ export default function Customers() {
           </button>
         </div>
       </div>
+
+      {formModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setFormModal(false)}>
+          <div style={{ background: '#141418', border: '1px solid #2A2A35', borderRadius: '14px', width: '480px', maxHeight: '88vh', overflowY: 'auto', padding: '20px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <span style={{ fontSize: '16px', fontWeight: 700, color: '#F0EFF6' }}>{editingId ? 'Edit Customer' : 'Add Customer'}</span>
+              <button onClick={() => setFormModal(false)} style={{ background: 'none', border: 'none', color: '#8A8A9E', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                ['name', 'Name *'],
+                ['phone', 'Phone *'],
+                ['email', 'Email'],
+                ['city', 'City'],
+                ['address', 'Address'],
+              ].map(([key, label]) => (
+                <div key={key}>
+                  <label style={{ fontSize: '11px', color: '#8A8A9E', marginBottom: '4px', display: 'block' }}>{label}</label>
+                  <input value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                    style={{ width: '100%', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '7px', padding: '8px 10px', color: '#F0EFF6', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+              <div>
+                <label style={{ fontSize: '11px', color: '#8A8A9E', marginBottom: '4px', display: 'block' }}>Source</label>
+                <select value={form.source} onChange={e => setForm(f => ({ ...f, source: e.target.value }))} style={{ width: '100%', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '7px', padding: '8px 10px', color: '#F0EFF6', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}>
+                  {['Shopify', 'Instagram', 'WhatsApp', 'Website', 'Mobile App', 'Other'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#8A8A9E', marginBottom: '4px', display: 'block' }}>Tags (comma separated)</label>
+                <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+                  style={{ width: '100%', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '7px', padding: '8px 10px', color: '#F0EFF6', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: '#8A8A9E', marginBottom: '4px', display: 'block' }}>Notes</label>
+                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                  style={{ width: '100%', minHeight: '70px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '7px', padding: '8px 10px', color: '#F0EFF6', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+              </div>
+
+              {saveError && <div style={{ fontSize: '12px', color: '#E25C5C', background: '#E25C5C18', border: '1px solid #E25C5C44', borderRadius: '7px', padding: '8px 10px' }}>{saveError}</div>}
+
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '6px' }}>
+                <Button variant="secondary" onClick={() => setFormModal(false)}>Cancel</Button>
+                <Button variant="primary" onClick={handleSaveCustomer} disabled={saving}>{saving ? 'Saving...' : editingId ? 'Save Changes' : 'Create Customer'}</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </PageWrapper>
   );
 }
