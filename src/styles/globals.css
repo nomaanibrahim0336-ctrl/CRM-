@@ -67,3 +67,16 @@ html, body, #root {
 input, textarea, select {
   font-family: 'DM Sans', sans-serif;
 }
+
+@media (max-width: 860px) {
+  .hide-mobile {
+    display: none !important;
+  }
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+

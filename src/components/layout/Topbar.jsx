@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, ShoppingBag, MessageSquare, Truck, AlertCircle, CreditCard, User, ChevronDown, Keyboard, HelpCircle, Store, LogOut, Settings } from 'lucide-react';
+import { Search, Bell, ShoppingBag, MessageSquare, Truck, AlertCircle, CreditCard, User, ChevronDown, Keyboard, HelpCircle, Store, LogOut, Settings, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { orders, customers, products } from '../../data/mockData';
 import { useKeyboard } from '../../hooks/useKeyboard';
@@ -39,7 +39,7 @@ function useClickOutside(ref, handler) {
   }, [handler]);
 }
 
-export default function Topbar() {
+export default function Topbar({ onMenuClick, showMenu }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -91,14 +91,19 @@ export default function Topbar() {
         padding: '0 24px', position: 'sticky', top: 0, zIndex: 100, flexShrink: 0,
       }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '160px' }}>
-          <div style={{ width: '28px', height: '28px', background: 'linear-gradient(135deg, #7C6AF7, #9180FF)', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800, color: '#fff' }}>C</div>
-          <span style={{ fontWeight: 700, fontSize: '16px', color: '#F0EFF6' }}>CRM</span>
-          <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', background: '#2A2550', color: '#7C6AF7', borderRadius: '4px', border: '1px solid #7C6AF733' }}>PRO</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: '120px' }}>
+          {showMenu && (
+            <button onClick={onMenuClick} style={{ background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#8A8A9E', flexShrink: 0 }}>
+              <Menu size={16} />
+            </button>
+          )}
+          <div style={{ width: '28px', height: '28px', background: 'linear-gradient(135deg, #7C6AF7, #9180FF)', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800, color: '#fff', flexShrink: 0 }}>C</div>
+          <span style={{ fontWeight: 700, fontSize: '16px', color: '#F0EFF6', whiteSpace: 'nowrap' }}>CRM</span>
+          <span className="hide-mobile" style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', background: '#2A2550', color: '#7C6AF7', borderRadius: '4px', border: '1px solid #7C6AF733', whiteSpace: 'nowrap' }}>PRO</span>
         </div>
 
         {/* Search Bar */}
-        <div style={{ flex: 1, maxWidth: '480px', margin: '0 24px', position: 'relative' }}>
+        <div className="hide-mobile" style={{ flex: 1, maxWidth: '480px', margin: '0 24px', position: 'relative' }}>
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#55556A' }} />
           <input
             placeholder="Search orders, customers, products..."

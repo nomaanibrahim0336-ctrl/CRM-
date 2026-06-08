@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { printShippingLabel } from '../utils/printDoc';
 import {
   Truck, Package, MapPin, Clock, CheckCircle, XCircle, AlertTriangle,
   RotateCcw, Plus, Search, Download, RefreshCw, ChevronDown, Eye,
@@ -894,7 +895,8 @@ export default function Courier() {
                     style={{ flex: 1, padding: '12px', background: booking ? '#55556A' : '#7C6AF7', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '14px', fontWeight: 600, cursor: booking ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <Package size={15} /> {booking ? 'Booking...' : 'Book Shipment'}
                   </button>
-                  <button style={{ padding: '12px 20px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button onClick={() => printShippingLabel({ trackingId: bookingSuccess ? bookingSuccess.split(':').pop()?.trim() : '', courier: bookingForm.courier, customer: bookingForm.customer, phone: bookingForm.phone, address: bookingForm.address, city: bookingForm.city, weight: bookingForm.weight, codAmount: bookingForm.cod, product: bookingForm.product })}
+                    style={{ padding: '12px 20px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Printer size={14} /> Print Label
                   </button>
                   <button onClick={() => { setBookingForm({ customer: '', phone: '', city: '', address: '', weight: '', cod: '', courier: 'TCS', product: '', notes: '' }); setBookingError(''); setBookingSuccess(''); }}
@@ -969,7 +971,7 @@ export default function Courier() {
                 <RefreshCw size={13} /> Refresh Tracking
               </button>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button style={{ flex: 1, padding: '9px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <button onClick={() => printShippingLabel(selected)} style={{ flex: 1, padding: '9px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                   <Printer size={12} /> Print Label
                 </button>
                 <button style={{ flex: 1, padding: '9px', background: '#3D1414', border: '1px solid #E2514A33', borderRadius: '8px', color: '#E2514A', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>

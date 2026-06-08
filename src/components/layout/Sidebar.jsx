@@ -53,10 +53,58 @@ const navGroups = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ mobile = false, mobileOpen = false, onClose }) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const w = collapsed ? '64px' : '240px';
+  const w = mobile ? '240px' : (collapsed ? '64px' : '240px');
+
+  if (mobile) {
+    return (
+      <>
+        {mobileOpen && (
+          <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 400 }} />
+        )}
+        <div onClick={() => { /* nav clicks bubble; close handled via NavLink onClick below */ }} style={{
+          position: 'fixed', top: 0, left: 0, bottom: 0,
+          width: w, minWidth: w,
+          background: '#141418',
+          borderRight: '1px solid #2A2A35',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          zIndex: 401,
+          transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 0.2s ease',
+        }}>
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: '8px' }} onClick={onClose}>
+            {navGroups.map((group) => (
+              <div key={group.label} style={{ marginBottom: '4px' }}>
+                <div style={{ padding: '12px 16px 4px', fontSize: '10px', fontWeight: 700, color: '#55556A', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+                  {group.label}
+                </div>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <NavLink key={item.path} to={item.path} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 16px', margin: '2px 8px', borderRadius: '8px',
+                      color: isActive ? '#7C6AF7' : '#8A8A9E',
+                      background: isActive ? '#2A2550' : 'transparent',
+                      textDecoration: 'none', fontSize: '13px', fontWeight: isActive ? 600 : 400,
+                    }}>
+                      <Icon size={16} style={{ flexShrink: 0 }} />
+                      <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <div style={{

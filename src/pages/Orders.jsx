@@ -7,6 +7,7 @@ import { orders as mockOrders } from '../data/mockData';
 import { exportCsv } from '../utils/exportCsv';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
+import { printInvoice } from '../utils/printDoc';
 
 const tabs = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
 const sourceColors = { Instagram: '#E1306C', Shopify: '#96BF48', WhatsApp: '#25D366', Website: '#3A8AE8', 'Mobile App': '#7C6AF7' };
@@ -375,7 +376,7 @@ export default function Orders() {
             { label: 'View Details', action: () => { setSelectedOrder(orders.find(o => o.id === actionMenu.orderId)); setActionMenu(null); } },
             { label: 'Update Status', action: () => { const o = orders.find(x => x.id === actionMenu.orderId); setStatusModal({ orderId: o.id, _id: o._id, currentStatus: o.status }); setActionMenu(null); } },
             { label: 'Add Tracking Number', action: () => { setTrackingModal(actionMenu.orderId); setTrackingCourier(''); setTrackingNumber(''); setActionMenu(null); } },
-            { label: 'Print Invoice', action: () => { addToast('Printing...', 'info'); setActionMenu(null); } },
+            { label: 'Print Invoice', action: () => { const o = orders.find(x => x.id === actionMenu.orderId); printInvoice(o); setActionMenu(null); } },
           ].map(item => (
             <button key={item.label} onClick={item.action} style={{ width: '100%', padding: '10px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: '13px', color: '#F0EFF6', cursor: 'pointer' }}
               onMouseEnter={e => e.currentTarget.style.background = '#2A2A35'}
@@ -427,6 +428,7 @@ export default function Orders() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Badge status={selectedOrder.status} />
+              <Button variant="secondary" size="sm" onClick={() => printInvoice(selectedOrder)}>Print Invoice</Button>
               <button onClick={() => setSelectedOrder(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8A8A9E', display: 'flex' }}><X size={18} /></button>
             </div>
           </div>

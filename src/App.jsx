@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import useIsMobile from './hooks/useIsMobile';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -19,6 +20,8 @@ import Financials from './pages/Financials';
 
 function AppShell() {
   const { user, loading } = useAuth();
+  const isMobile = useIsMobile();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   if (loading) {
     return (
@@ -35,9 +38,11 @@ function AppShell() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0D0D0F', overflow: 'hidden' }}>
-      <Topbar />
+      <Topbar onMenuClick={() => setMobileNavOpen(o => !o)} showMenu={isMobile} />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <Sidebar />
+        {isMobile
+          ? <Sidebar mobile mobileOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+          : <Sidebar />}
         <main style={{ flex: 1, overflow: 'hidden', background: '#0D0D0F' }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
