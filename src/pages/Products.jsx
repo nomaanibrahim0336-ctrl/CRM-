@@ -57,25 +57,55 @@ export default function Products() {
     : null;
 
   const openAdd = () => { setForm(emptyForm); setEditProduct(null); setModal('add'); };
-  const openEdit = (p, e) => { e.stopPropagation(); setForm({ name: p.name, sku: p.sku, category: p.category, costPrice: p.price, salePrice: p.price, stock: p.stock, reorderPoint: 10, supplier: 'Supplier', description: '' }); setEditProduct(p); setModal('edit'); };
+  const openEdit = (p, e) => { e.stopPropagation(); setForm({ name: p.name, sku: p.sku, category: p.category, costPrice: p.costPrice, salePrice: p.salePrice, stock: p.stock, reorderPoint: p.reorderPoint, supplier: p.supplier === '—' ? '' : p.supplier, description: p.description || '' }); setEditProduct(p); setModal('edit'); };
   const openView = (p, e) => { e.stopPropagation(); setViewProduct(p); setModal('view'); };
   const closeModal = () => { setModal(null); setEditProduct(null); setViewProduct(null); };
 
   const autoSku = () => setForm(f => ({ ...f, sku: 'SKU-' + Math.random().toString(36).substr(2, 5).toUpperCase() }));
 
-  const saveProduct = () => {
+  const [saving, setSaving] = useState(false);
+
+  const saveProduct = async () => {
     if (!form.name || !form.sku) { addToast('Name and SKU are required', 'error'); return; }
-    const price = parseFloat(form.salePrice) || 0;
+    const costPrice = parseFloat(form.costPrice) || 0;
+    const salePrice = parseFloat(form.salePrice) || 0;
     const stock = parseInt(form.stock) || 0;
-    if (editProduct) {
-      setProducts(prev => prev.map(p => p.id === editProduct.id ? { ...p, name: form.name, sku: form.sku, category: form.category, price, stock, status: stock === 0 ? 'Out of Stock' : stock <= 7 ? 'Low Stock' : 'Active' } : p));
-      addToast('Product updated', 'success');
-    } else {
-      const newP = { id: `P${Date.now()}`, name: form.name, sku: form.sku, category: form.category, price, stock, sold: 0, status: stock === 0 ? 'Out of Stock' : stock <= 7 ? 'Low Stock' : 'Active' };
-      setProducts(prev => [newP, ...prev]);
-      addToast('Product added', 'success');
+    const reorderPoint = parseInt(form.reorderPoint) || 5;
+    const payload = {
+      name: form.name.trim(),
+      sku: form.sku.trim(),
+      category: form.category,
+      costPrice, salePrice, stock, reorderPoint,
+      supplier: form.supplier.trim() || undefined,
+      description: form.description.trim() || undefined,
+    };
+    setSaving(true);
+    try {
+      const res = editProduct
+        ? await api.put(`/api/products/${editProduct.id}`, payload)
+        : await api.post('/api/products', payload);
+      if (res.success) {
+        const p = res.data;
+        const mapped = {
+          id: p._id, name: p.name, sku: p.sku || '—',
+          category: p.category || 'Other',
+          costPrice: p.costPrice || 0, salePrice: p.salePrice || p.price || 0,
+          stock: p.stock ?? 0, reorderPoint: p.reorderPoint || 5,
+          supplier: p.supplier || '—', description: p.description || '',
+          status: (p.stock ?? 0) === 0 ? 'Out of Stock' : (p.stock ?? 0) <= (p.reorderPoint || 5) ? 'Low Stock' : 'In Stock',
+          image: p.image || null,
+        };
+        setProducts(prev => editProduct ? prev.map(x => x.id === editProduct.id ? mapped : x) : [mapped, ...prev]);
+        addToast(editProduct ? 'Product updated' : 'Product added', 'success');
+        closeModal();
+      } else {
+        addToast(res.message || 'Failed to save product', 'error');
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to save product', 'error');
+    } finally {
+      setSaving(false);
     }
-    closeModal();
   };
 
   const inputStyle = { width: '100%', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '8px 12px', color: '#F0EFF6', fontSize: '13px', outline: 'none' };
@@ -212,7 +242,7 @@ export default function Products() {
             </div>
             <div style={{ padding: '16px 24px', borderTop: '1px solid #1F1F28', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               <button onClick={closeModal} style={{ padding: '9px 20px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={saveProduct} style={{ padding: '9px 20px', background: '#7C6AF7', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>{modal === 'add' ? 'Add Product' : 'Save Changes'}</button>
+              <button onClick={saveProduct} disabled={saving} style={{ padding: '9px 20px', background: '#7C6AF7', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving...' : modal === 'add' ? 'Add Product' : 'Save Changes'}</button>
             </div>
           </div>
         </div>
