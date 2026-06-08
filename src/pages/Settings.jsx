@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../utils/api';
+import { useToast } from '../context/ToastContext';
 import {
   User, Bell, Shield, Users, Save, Zap, Store, MessageCircle,
   Truck, Globe, Smartphone, RefreshCw, Link, Unlink, Eye, EyeOff,
@@ -132,12 +134,26 @@ function CopyField({ label, value }) {
   );
 }
 
-function SaveBtn({ label = 'Save Settings', color = '#7C6AF7' }) {
+function SaveBtn({ label = 'Save Settings', color = '#7C6AF7', onSave }) {
   const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const handleClick = async () => {
+    if (onSave) {
+      setBusy(true);
+      try {
+        const ok = await onSave();
+        if (ok !== false) { setSaved(true); setTimeout(() => setSaved(false), 2000); }
+      } finally {
+        setBusy(false);
+      }
+    } else {
+      setSaved(true); setTimeout(() => setSaved(false), 2000);
+    }
+  };
   return (
-    <button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); }}
-      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', background: saved ? '#0F3D2A' : color, border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}>
-      {saved ? <><CheckCircle size={13} /> Saved!</> : <><Save size={13} /> {label}</>}
+    <button onClick={handleClick} disabled={busy}
+      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', background: saved ? '#0F3D2A' : color, border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.7 : 1, transition: 'background 0.2s' }}>
+      {saved ? <><CheckCircle size={13} /> Saved!</> : busy ? 'Saving...' : <><Save size={13} /> {label}</>}
     </button>
   );
 }
@@ -174,8 +190,43 @@ const teamMembers = [
 ];
 
 export default function Settings() {
+  const addToast = useToast();
   const [active, setActive] = useState('profile');
   const [conn, setConn] = useState(INIT);
+  const [profile, setProfile] = useState({ businessName: 'My Store PK', phone: '+92 300 0000000', currency: 'PKR – Pakistani Rupee', timezone: 'Asia/Karachi (PKT +5)' });
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  useEffect(() => {
+    api.get('/api/settings?group=profile').then(data => {
+      if (data.success && data.data?.length) {
+        setProfile(prev => {
+          const next = { ...prev };
+          data.data.forEach(s => { if (s.key in next) next[s.key] = s.value; });
+          return next;
+        });
+      }
+      setProfileLoaded(true);
+    }).catch(() => setProfileLoaded(true));
+  }, []);
+
+  const saveProfile = async () => {
+    try {
+      const res = await api.put('/api/settings', {
+        settings: [
+          { key: 'businessName', value: profile.businessName, group: 'profile' },
+          { key: 'phone', value: profile.phone, group: 'profile' },
+          { key: 'currency', value: profile.currency, group: 'profile' },
+          { key: 'timezone', value: profile.timezone, group: 'profile' },
+        ],
+      });
+      if (res.success) { addToast('Profile settings saved', 'success'); return true; }
+      addToast(res.message || 'Failed to save settings', 'error');
+      return false;
+    } catch (err) {
+      addToast(err.message || 'Failed to save settings', 'error');
+      return false;
+    }
+  };
   const [notifs, setNotifs] = useState({ orders: true, messages: true, payments: true, shipping: false, marketing: false, lowStock: true, returns: true });
 
   const toggle = key => setConn(c => ({ ...c, [key]: !c[key] }));
@@ -245,11 +296,14 @@ export default function Settings() {
                   <button style={{ marginLeft: 'auto', padding: '7px 14px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '12px', cursor: 'pointer' }}>Change Photo</button>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                  {[['Full Name','Noman Ibrahim'],['Email','nomaan.ibrahim0336@gmail.com'],['Phone','+92 300 0000000'],['Business Name','My Store PK'],['Currency','PKR – Pakistani Rupee'],['Timezone','Asia/Karachi (PKT +5)']].map(([l, v]) => (
-                    <Field key={l} label={l} value={v} />
-                  ))}
+                  <Field label="Full Name" value="Noman Ibrahim" readOnly />
+                  <Field label="Email" value="nomaan.ibrahim0336@gmail.com" readOnly />
+                  <Field key={'phone' + profileLoaded} label="Phone" value={profile.phone} onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))} />
+                  <Field key={'biz' + profileLoaded} label="Business Name" value={profile.businessName} onChange={e => setProfile(p => ({ ...p, businessName: e.target.value }))} />
+                  <Field key={'cur' + profileLoaded} label="Currency" value={profile.currency} onChange={e => setProfile(p => ({ ...p, currency: e.target.value }))} />
+                  <Field key={'tz' + profileLoaded} label="Timezone" value={profile.timezone} onChange={e => setProfile(p => ({ ...p, timezone: e.target.value }))} />
                 </div>
-                <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}><SaveBtn /></div>
+                <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}><SaveBtn onSave={saveProfile} /></div>
               </div>
             )}
 
