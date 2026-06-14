@@ -228,6 +228,62 @@ export default function Settings() {
     }
   };
   const [notifs, setNotifs] = useState({ orders: true, messages: true, payments: true, shipping: false, marketing: false, lowStock: true, returns: true });
+  const [notifsLoaded, setNotifsLoaded] = useState(true);
+
+  useEffect(() => {
+    api.get('/api/settings?group=notifications').then(data => {
+      if (data.success && data.data?.length) {
+        setNotifs(prev => {
+          const next = { ...prev };
+          data.data.forEach(s => { if (s.key in next) next[s.key] = s.value; });
+          return next;
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  const saveNotifs = async () => {
+    try {
+      const res = await api.put('/api/settings', {
+        settings: Object.entries(notifs).map(([key, value]) => ({ key, value, group: 'notifications' })),
+      });
+      if (res.success) { addToast('Notification preferences saved', 'success'); return true; }
+      addToast(res.message || 'Failed to save', 'error');
+      return false;
+    } catch (err) {
+      addToast(err.message || 'Failed to save', 'error');
+      return false;
+    }
+  };
+
+  // Password change
+  const [pwModal, setPwModal] = useState(false);
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwError, setPwError] = useState('');
+  const [pwSaving, setPwSaving] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (!pwForm.currentPassword || !pwForm.newPassword) { setPwError('All fields are required'); return; }
+    if (pwForm.newPassword !== pwForm.confirmPassword) { setPwError('New passwords do not match'); return; }
+    if (pwForm.newPassword.length < 6) { setPwError('New password must be at least 6 characters'); return; }
+    setPwSaving(true);
+    setPwError('');
+    try {
+      const res = await api.put('/api/auth/change-password', { currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
+      if (res.success) {
+        addToast('Password updated successfully', 'success');
+        setPwModal(false);
+        setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        setPwError(res.error || res.message || 'Failed to change password');
+      }
+    } catch (err) {
+      setPwError(err.message || 'Failed to change password');
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
 
   const toggle = key => setConn(c => ({ ...c, [key]: !c[key] }));
 
@@ -354,6 +410,7 @@ export default function Settings() {
                     <Toggle checked={notifs[key]} onChange={v => setNotifs(p => ({ ...p, [key]: v }))} />
                   </SettingRow>
                 ))}
+                <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}><SaveBtn onSave={saveNotifs} /></div>
               </div>
             )}
 
@@ -364,8 +421,8 @@ export default function Settings() {
                 <SettingRow label="Two-Factor Authentication" description="Add an extra layer of security to your account">
                   <button style={{ padding: '7px 14px', background: '#0F3D2A', border: '1px solid #1DB87A33', borderRadius: '8px', color: '#1DB87A', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Enable 2FA</button>
                 </SettingRow>
-                <SettingRow label="Change Password" description="Last changed 30 days ago">
-                  <button style={{ padding: '7px 14px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '12px', cursor: 'pointer' }}>Update Password</button>
+                <SettingRow label="Change Password" description="Update your account password">
+                  <button onClick={() => { setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); setPwError(''); setPwModal(true); }} style={{ padding: '7px 14px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '12px', cursor: 'pointer' }}>Update Password</button>
                 </SettingRow>
                 <SettingRow label="Active Sessions" description="2 active sessions (Chrome / Safari)">
                   <button style={{ padding: '7px 14px', background: '#3D1414', border: '1px solid #E2514A33', borderRadius: '8px', color: '#E2514A', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Revoke All</button>
@@ -817,6 +874,24 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {pwModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setPwModal(false)}>
+          <div style={{ background: '#141418', border: '1px solid #2A2A35', borderRadius: '14px', width: '400px', padding: '20px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '16px', fontWeight: 700, color: '#F0EFF6', marginBottom: '16px' }}>Change Password</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Field label="Current Password" type="password" value={pwForm.currentPassword} onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))} />
+              <Field label="New Password" type="password" value={pwForm.newPassword} onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))} />
+              <Field label="Confirm New Password" type="password" value={pwForm.confirmPassword} onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))} />
+              {pwError && <div style={{ fontSize: '12px', color: '#E25C5C', background: '#E25C5C18', border: '1px solid #E25C5C44', borderRadius: '7px', padding: '8px 10px' }}>{pwError}</div>}
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '6px' }}>
+                <button onClick={() => setPwModal(false)} style={{ padding: '9px 16px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', color: '#8A8A9E', fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+                <button onClick={handleChangePassword} disabled={pwSaving} style={{ padding: '9px 16px', background: '#7C6AF7', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, cursor: pwSaving ? 'default' : 'pointer', opacity: pwSaving ? 0.6 : 1 }}>{pwSaving ? 'Updating...' : 'Update Password'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

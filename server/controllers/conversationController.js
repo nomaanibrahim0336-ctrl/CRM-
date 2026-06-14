@@ -163,6 +163,22 @@ const updateStatus = async (req, res, next) => {
   }
 };
 
+// PUT /api/conversations/:id/notes
+const updateNotes = async (req, res, next) => {
+  try {
+    const { notes } = req.body;
+    const conversation = await Conversation.findByIdAndUpdate(
+      req.params.id,
+      { notes },
+      { new: true, runValidators: true }
+    );
+    if (!conversation) return res.status(404).json({ success: false, error: 'Conversation not found' });
+    res.json({ success: true, data: conversation });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // PUT /api/conversations/:id/assign
 const assignConversation = async (req, res, next) => {
   try {
@@ -234,6 +250,7 @@ module.exports = {
   createConversation,
   sendMessage,
   updateStatus,
+  updateNotes,
   assignConversation,
   toggleAi,
   getStats,

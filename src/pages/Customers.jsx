@@ -55,6 +55,32 @@ export default function Customers() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
+  const [noteText, setNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+
+  useEffect(() => {
+    setNoteText(selectedCustomer?.notes || '');
+  }, [selectedCustomer?.id]);
+
+  const handleSaveNote = async () => {
+    if (!selectedCustomer) return;
+    setSavingNote(true);
+    try {
+      const res = await api.put(`/api/customers/${selectedCustomer.id}`, { notes: noteText });
+      if (res.success) {
+        setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? { ...c, notes: noteText } : c));
+        setSelectedCustomer(prev => ({ ...prev, notes: noteText }));
+        addToast('Note saved', 'success');
+      } else {
+        addToast(res.message || 'Failed to save note', 'error');
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to save note', 'error');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
   const openAddModal = () => { setEditingId(null); setForm(emptyForm); setSaveError(''); setFormModal(true); };
   const openEditModal = (c) => {
     setEditingId(c.id);
@@ -280,8 +306,8 @@ export default function Customers() {
 
         {activeTab === 'Notes' && (
           <Card>
-            <textarea placeholder="Add notes about this customer..." style={{ width: '100%', minHeight: '120px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '12px', color: '#F0EFF6', fontSize: '13px', resize: 'vertical', outline: 'none' }} />
-            <Button variant="primary" style={{ marginTop: '12px' }}>Save Note</Button>
+            <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add notes about this customer..." style={{ width: '100%', minHeight: '120px', background: '#1C1C22', border: '1px solid #2A2A35', borderRadius: '8px', padding: '12px', color: '#F0EFF6', fontSize: '13px', resize: 'vertical', outline: 'none' }} />
+            <Button variant="primary" style={{ marginTop: '12px' }} onClick={handleSaveNote} disabled={savingNote}>{savingNote ? 'Saving...' : 'Save Note'}</Button>
           </Card>
         )}
       </PageWrapper>

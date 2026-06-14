@@ -6,6 +6,7 @@ const {
   createConversation,
   sendMessage,
   updateStatus,
+  updateNotes,
   assignConversation,
   toggleAi,
   getStats,
@@ -19,6 +20,7 @@ router.route('/').get(getConversations).post(createConversation);
 router.route('/:id').get(getConversation);
 router.post('/:id/messages', sendMessage);
 router.put('/:id/status', updateStatus);
+router.put('/:id/notes', updateNotes);
 router.put('/:id/assign', assignConversation);
 router.put('/:id/ai-toggle', toggleAi);
 
